@@ -28,7 +28,7 @@ const EnvSchema = z.object({
     .string()
     .transform((val) => parseInt(val, 10))
     .default('30000'),
-  MCP_SERVER_NAME: z.string().default('frontend-dev-mcp-server'),
+  MCP_SERVER_NAME: z.string().default('figma-to-react-mcp'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 

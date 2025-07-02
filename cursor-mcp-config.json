@@ -5,7 +5,7 @@
   "mcpServers": {
     "frontend-dev": {
       "command": "npx",
-      "args": ["frontend-dev-mcp-server"],
+      "args": ["figma-to-react-mcp"],
       "env": {
         "GITHUB_TOKEN": "your_github_token_here",
         "FIGMA_ACCESS_TOKEN": "your_figma_token_here",
@@ -37,7 +37,7 @@
       "Figma Access Token"
     ],
     "steps": [
-      "1. Run: npx frontend-dev-mcp-server --setup",
+      "1. Run: npx figma-to-react-mcp --setup",
       "2. Follow the prompts to enter your tokens",
       "3. The configuration will be automatically added to Cursor"
     ]

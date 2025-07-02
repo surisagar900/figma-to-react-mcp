@@ -194,7 +194,7 @@ Let's get started!
 Next steps:
 1. Restart Cursor to load the new MCP configuration
 2. Open a project and look for the MCP tools in the sidebar
-3. Try running: npx frontend-dev-mcp-server --help
+3. Try running: npx figma-to-react-mcp --help
 
 Available tools:
 • design_to_code - Convert Figma designs to React components

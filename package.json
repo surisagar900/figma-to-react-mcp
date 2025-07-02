@@ -1,11 +1,11 @@
 {
-  "name": "frontend-dev-mcp-server",
+  "name": "figma-to-react-mcp",
   "version": "1.0.0",
   "description": "A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "frontend-dev-mcp-server": "dist/index.js"
+    "figma-to-react-mcp": "dist/index.js"
   },
   "files": [
     "dist/**/*",
@@ -70,10 +70,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sagarsuri/frontend-dev-mcp-server.git"
+    "url": "git+https://github.com/sagarsuri/figma-to-react-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/sagarsuri/frontend-dev-mcp-server/issues"
+    "url": "https://github.com/sagarsuri/figma-to-react-mcp/issues"
   },
-  "homepage": "https://github.com/sagarsuri/frontend-dev-mcp-server#readme"
+  "homepage": "https://github.com/sagarsuri/figma-to-react-mcp#readme"
 }

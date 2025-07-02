@@ -428,7 +428,7 @@ async function main() {
 A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations.
 
 Usage:
-  npx frontend-dev-mcp-server [options]
+  npx figma-to-react-mcp [options]
 
 Options:
   --setup           Interactive setup for tokens and Cursor configuration
@@ -444,11 +444,11 @@ Optional Environment Variables:
   LOG_LEVEL             Logging level (default: info)
 
 Examples:
-  npx frontend-dev-mcp-server --setup    # Interactive setup
-  npx frontend-dev-mcp-server             # Start MCP server
-  GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx frontend-dev-mcp-server
+    npx figma-to-react-mcp --setup    # Interactive setup
+  npx figma-to-react-mcp             # Start MCP server
+GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx figma-to-react-mcp
 
-For more information, visit: https://github.com/your-username/frontend-dev-mcp-server
+For more information, visit: https://github.com/sagarsuri/figma-to-react-mcp
 `);
     process.exit(0);
   }
@@ -464,7 +464,7 @@ For more information, visit: https://github.com/your-username/frontend-dev-mcp-s
     console.error("   • GITHUB_TOKEN: Your GitHub personal access token");
     console.error("   • FIGMA_ACCESS_TOKEN: Your Figma access token");
     console.error(
-      "\n💡 Run 'npx frontend-dev-mcp-server --setup' for interactive setup"
+      "\n💡 Run 'npx figma-to-react-mcp --setup' for interactive setup"
     );
     process.exit(1);
   }

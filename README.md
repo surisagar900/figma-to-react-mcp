@@ -1,4 +1,4 @@
-# Frontend Dev MCP Server
+# Figma to React MCP
 
 A unified MCP (Model Context Protocol) server for frontend developers that combines GitHub, Figma, and Playwright integrations to automate the design-to-code workflow.
 
@@ -16,10 +16,10 @@ A unified MCP (Model Context Protocol) server for frontend developers that combi
 
 ```bash
 # Interactive setup (recommended for first-time users)
-npx frontend-dev-mcp-server --setup
+npx figma-to-react-mcp --setup
 
 # Or run directly if you have tokens configured
-GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx frontend-dev-mcp-server
+GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx figma-to-react-mcp
 ```
 
 The `--setup` command will:
@@ -38,7 +38,7 @@ The `--setup` command will:
 
 2. **Run with environment variables**:
    ```bash
-   GITHUB_TOKEN=your_github_token FIGMA_ACCESS_TOKEN=your_figma_token npx frontend-dev-mcp-server
+   GITHUB_TOKEN=your_github_token FIGMA_ACCESS_TOKEN=your_figma_token npx figma-to-react-mcp
    ```
 
 ## 🛠️ Available Tools
@@ -72,15 +72,15 @@ Creates new GitHub branches for feature development.
 ## 📋 CLI Commands
 
 ```bash
-npx frontend-dev-mcp-server --setup    # Interactive setup
-npx frontend-dev-mcp-server --help     # Show help
-npx frontend-dev-mcp-server --version  # Show version
-npx frontend-dev-mcp-server            # Start MCP server
+npx figma-to-react-mcp --setup    # Interactive setup
+npx figma-to-react-mcp --help     # Show help
+npx figma-to-react-mcp --version  # Show version
+npx figma-to-react-mcp            # Start MCP server
 ```
 
 ## ⚙️ Cursor Integration
 
-After running `npx frontend-dev-mcp-server --setup`, the MCP server will be automatically configured in Cursor.
+After running `npx figma-to-react-mcp --setup`, the MCP server will be automatically configured in Cursor.
 
 **Manual Cursor Setup** (if needed):
 Add this to your Cursor MCP settings:
@@ -90,7 +90,7 @@ Add this to your Cursor MCP settings:
   "mcpServers": {
     "frontend-dev": {
       "command": "npx",
-      "args": ["frontend-dev-mcp-server"],
+      "args": ["figma-to-react-mcp"],
       "env": {
         "GITHUB_TOKEN": "your_github_token_here",
         "FIGMA_ACCESS_TOKEN": "your_figma_token_here"
@@ -142,7 +142,7 @@ Figma Design URL → Extract Design → Generate React Component → Create Test
 
 ```bash
 git clone <your-repo>
-cd frontend-dev-mcp-server
+cd figma-to-react-mcp
 npm install
 npm run build
 npm run dev
@@ -190,8 +190,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 For issues and questions:
 
 - Create an issue in the GitHub repository
-- Run `npx frontend-dev-mcp-server --help` for CLI help
-- Check the interactive setup: `npx frontend-dev-mcp-server --setup`
+- Run `npx figma-to-react-mcp --help` for CLI help
+- Check the interactive setup: `npx figma-to-react-mcp --setup`
 
 ---
 
