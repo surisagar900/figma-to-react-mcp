@@ -22,8 +22,13 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "postinstall": "npx playwright install chromium",
-    "prepublishOnly": "npm run build",
-    "prepack": "npm run build"
+    "prepublishOnly": "npm run build && npm test && npm run lint",
+    "prepack": "npm run build",
+    "version": "npm run build && git add dist/",
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
   },
   "keywords": [
     "mcp",

@@ -1,0 +1,103 @@
+name: Publish to NPM
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run linting
+        run: npm run lint
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet HEAD~1 HEAD -- src/ package.json; then
+            echo "No relevant changes detected"
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in src/ or package.json"
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump version and publish
+        if: steps.changes.outputs.should_publish == 'true'
+        run: |
+          # Determine version bump type based on commit message
+          if git log -1 --pretty=%B | grep -q "BREAKING CHANGE\|breaking change"; then
+            VERSION_TYPE="major"
+          elif git log -1 --pretty=%B | grep -q "feat:\|feature:"; then
+            VERSION_TYPE="minor"
+          else
+            VERSION_TYPE="patch"
+          fi
+
+          echo "Bumping $VERSION_TYPE version"
+          npm version $VERSION_TYPE -m "chore: bump version to %s [skip ci]"
+
+          # Push the version commit and tag
+          git push origin main --follow-tags
+
+          # Publish to npm
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.changes.outputs.should_publish == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          release_name: Release v${{ steps.version.outputs.new_version }}
+          body: |
+            ## Changes
+            ${{ github.event.head_commit.message }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.old_version }}...v${{ steps.version.outputs.new_version }}
+          draft: false
+          prerelease: false
