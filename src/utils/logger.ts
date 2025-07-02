@@ -18,7 +18,7 @@ export class Logger {
   };
   private readonly bufferSize = 100;
   private logBuffer: LogEntry[] = [];
-  private flushTimer?: NodeJS.Timeout;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly enableBuffering: boolean;
 
   private constructor(logLevel: LogLevel = "info", enableBuffering = false) {
@@ -74,25 +74,25 @@ export class Logger {
   private writeLog(entry: LogEntry): void {
     const formatted = this.formatMessage(entry);
     switch (entry.level) {
-      case "debug":
-        console.debug(formatted);
-        break;
-      case "info":
-        console.info(formatted);
-        break;
-      case "warn":
-        console.warn(formatted);
-        break;
-      case "error":
-        console.error(formatted);
-        break;
+    case "debug":
+      console.debug(formatted);
+      break;
+    case "info":
+      console.info(formatted);
+      break;
+    case "warn":
+      console.warn(formatted);
+      break;
+    case "error":
+      console.error(formatted);
+      break;
     }
   }
 
   private flush(): void {
     if (this.flushTimer) {
       clearTimeout(this.flushTimer);
-      this.flushTimer = undefined;
+      this.flushTimer = null;
     }
 
     this.logBuffer.forEach((entry) => this.writeLog(entry));

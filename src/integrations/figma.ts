@@ -64,7 +64,7 @@ export class FigmaIntegration {
           message: error.message,
         });
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -157,8 +157,8 @@ export class FigmaIntegration {
         backgroundColor: this.extractBackgroundColor(frameNode),
         children: frameNode.children
           ? frameNode.children.map((child: any) =>
-              this.convertToFigmaNode(child)
-            )
+            this.convertToFigmaNode(child),
+          )
           : [],
       };
 
@@ -169,7 +169,7 @@ export class FigmaIntegration {
     } catch (error) {
       this.logger.error(
         `Failed to fetch Figma frame: ${fileId}/${nodeId}`,
-        error
+        error,
       );
       return {
         success: false,
@@ -305,7 +305,7 @@ export class FigmaIntegration {
       if (solidFill && solidFill.color) {
         const { r, g, b, a = 1 } = solidFill.color;
         return `rgba(${Math.round(r * 255)}, ${Math.round(
-          g * 255
+          g * 255,
         )}, ${Math.round(b * 255)}, ${a})`;
       }
     }
@@ -337,10 +337,10 @@ export class FigmaIntegration {
       colors: Array.from(this.tokenCache.colors.values()),
       fonts: Array.from(this.tokenCache.fonts.values()),
       spacing: Array.from(this.tokenCache.spacing.values()).sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       ),
       borderRadius: Array.from(this.tokenCache.borderRadius.values()).sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       ),
     };
   }
@@ -353,7 +353,7 @@ export class FigmaIntegration {
           const { r, g, b, a = 1 } = fill.color;
           const colorKey = `${r}-${g}-${b}-${a}`;
           const colorValue = `rgba(${Math.round(r * 255)}, ${Math.round(
-            g * 255
+            g * 255,
           )}, ${Math.round(b * 255)}, ${a})`;
           this.tokenCache.colors.set(colorKey, colorValue);
         }
@@ -378,7 +378,7 @@ export class FigmaIntegration {
     if (typeof node.cornerRadius === "number") {
       this.tokenCache.borderRadius.set(
         `br-${node.cornerRadius}`,
-        node.cornerRadius
+        node.cornerRadius,
       );
     }
   }

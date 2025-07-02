@@ -28,8 +28,7 @@ module.exports = {
     "prefer-template": "error",
 
     // Code style
-    "comma-dangle": ["error", "always-multiline"],
-    quotes: ["error", "single"],
+    quotes: ["error", "double"],
     semi: ["error", "always"],
     indent: ["error", 2],
     "linebreak-style": ["error", "unix"],

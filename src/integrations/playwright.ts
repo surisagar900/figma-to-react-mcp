@@ -1,7 +1,6 @@
-import { Browser, BrowserContext, Page, chromium } from "playwright";
+import { Browser, BrowserContext, chromium } from "playwright";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-import { existsSync, readFileSync, writeFileSync } from "fs";
 import { promises as fs } from "fs";
 import { join } from "path";
 import {
@@ -94,7 +93,7 @@ export class PlaywrightIntegration {
   async captureScreenshot(
     url: string,
     selector?: string,
-    outputPath?: string
+    outputPath?: string,
   ): Promise<ToolResult> {
     const context = await this.getContext();
 
@@ -140,11 +139,11 @@ export class PlaywrightIntegration {
   async compareScreenshots(
     baseImagePath: string,
     currentImagePath: string,
-    threshold: number = 0.1
+    threshold: number = 0.1,
   ): Promise<ToolResult> {
     try {
       this.logger.info(
-        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`
+        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`,
       );
 
       // Use async file checks
@@ -196,7 +195,7 @@ export class PlaywrightIntegration {
         diff.data,
         baseImage.width,
         baseImage.height,
-        { threshold }
+        { threshold },
       );
 
       const totalPixels = baseImage.width * baseImage.height;
@@ -217,8 +216,8 @@ export class PlaywrightIntegration {
 
       this.logger.info(
         `Screenshot comparison completed - Similarity: ${similarity.toFixed(
-          2
-        )}%`
+          2,
+        )}%`,
       );
 
       return {
@@ -238,7 +237,7 @@ export class PlaywrightIntegration {
     testName: string,
     url: string,
     selector?: string,
-    baselineDir: string = "./baselines"
+    baselineDir: string = "./baselines",
   ): Promise<ToolResult> {
     try {
       this.logger.info(`Running visual test: ${testName}`);
@@ -252,7 +251,7 @@ export class PlaywrightIntegration {
       const screenshotResult = await this.captureScreenshot(
         url,
         selector,
-        currentImagePath
+        currentImagePath,
       );
 
       if (!screenshotResult.success) {
@@ -273,7 +272,7 @@ export class PlaywrightIntegration {
       if (baselineExists) {
         const comparisonResult = await this.compareScreenshots(
           baseImagePath,
-          currentImagePath
+          currentImagePath,
         );
 
         if (comparisonResult.success) {
@@ -305,7 +304,7 @@ export class PlaywrightIntegration {
       }
 
       this.logger.info(
-        `Visual test completed: ${testName} - ${passed ? "PASSED" : "FAILED"}`
+        `Visual test completed: ${testName} - ${passed ? "PASSED" : "FAILED"}`,
       );
 
       return {
@@ -323,7 +322,7 @@ export class PlaywrightIntegration {
 
   async testResponsiveDesign(
     url: string,
-    viewports: Array<{ width: number; height: number; name: string }>
+    viewports: Array<{ width: number; height: number; name: string }>,
   ): Promise<ToolResult> {
     const context = await this.getContext();
 
@@ -359,7 +358,7 @@ export class PlaywrightIntegration {
       await page.close();
 
       this.logger.info(
-        `Responsive design test completed - ${screenshots.length} screenshots`
+        `Responsive design test completed - ${screenshots.length} screenshots`,
       );
 
       return {
@@ -394,28 +393,34 @@ export class PlaywrightIntegration {
         const problems: string[] = [];
 
         // Check for missing alt attributes
-        const images = document.querySelectorAll("img");
-        images.forEach((img, index) => {
+        const images = (globalThis as any).document.querySelectorAll("img");
+        images.forEach((img: any, index: number) => {
           if (!img.alt) {
             problems.push(`Image ${index + 1} is missing alt text`);
           }
         });
 
         // Check for heading hierarchy
-        const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+        const headings = (globalThis as any).document.querySelectorAll(
+          "h1, h2, h3, h4, h5, h6",
+        );
         if (headings.length > 0) {
           const firstHeading = headings[0];
-          if (firstHeading.tagName !== "H1") {
+          if (firstHeading && firstHeading.tagName !== "H1") {
             problems.push("Page should start with an H1 heading");
           }
         }
 
         // Check for form labels
-        const inputs = document.querySelectorAll("input, textarea, select");
-        inputs.forEach((input, index) => {
+        const inputs = (globalThis as any).document.querySelectorAll(
+          "input, textarea, select",
+        );
+        inputs.forEach((input: any, index: number) => {
           const id = input.getAttribute("id");
           if (id) {
-            const label = document.querySelector(`label[for="${id}"]`);
+            const label = (globalThis as any).document.querySelector(
+              `label[for="${id}"]`,
+            );
             if (!label) {
               problems.push(`Form field ${index + 1} is missing a label`);
             }
@@ -428,7 +433,7 @@ export class PlaywrightIntegration {
       await page.close();
 
       this.logger.info(
-        `Accessibility validation completed - ${issues.length} issues found`
+        `Accessibility validation completed - ${issues.length} issues found`,
       );
 
       return {
@@ -455,7 +460,7 @@ export class PlaywrightIntegration {
 
       // Close all contexts
       await Promise.all(
-        this.browserPool.contexts.map((context) => context.close())
+        this.browserPool.contexts.map((context) => context.close()),
       );
 
       // Close browser

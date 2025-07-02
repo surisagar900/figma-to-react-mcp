@@ -5,8 +5,8 @@ interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  memoryStart?: NodeJS.MemoryUsage;
-  memoryEnd?: NodeJS.MemoryUsage;
+  memoryStart?: ReturnType<typeof process.memoryUsage>;
+  memoryEnd?: ReturnType<typeof process.memoryUsage>;
   metadata?: Record<string, any>;
 }
 
@@ -46,7 +46,7 @@ export class PerformanceMonitor {
       name,
       startTime: performance.now(),
       memoryStart: process.memoryUsage(),
-      metadata,
+      metadata: metadata || {},
     });
 
     return id;
@@ -86,11 +86,10 @@ export class PerformanceMonitor {
     fn: () => Promise<T>,
     metadata?: Record<string, any>
   ): Promise<T> {
-    return new Promise(async (resolve, reject) => {
-      const id = this.startTiming(name, metadata);
+    const id = this.startTiming(name, metadata);
 
-      try {
-        const result = await fn();
+    return fn()
+      .then((result) => {
         const metric = this.endTiming(id);
 
         if (metric && metric.duration) {
@@ -99,13 +98,13 @@ export class PerformanceMonitor {
           );
         }
 
-        resolve(result);
-      } catch (error) {
+        return result;
+      })
+      .catch((error) => {
         this.endTiming(id);
         this.logger.error(`${name} failed`, error);
-        reject(error);
-      }
-    });
+        throw error;
+      });
   }
 
   measureSync<T>(name: string, fn: () => T, metadata?: Record<string, any>): T {

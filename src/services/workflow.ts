@@ -10,12 +10,6 @@ import { Logger } from "../utils/logger.js";
 import { promises as fs } from "fs";
 import { join } from "path";
 
-interface WorkflowStep {
-  name: string;
-  execute: () => Promise<any>;
-  dependencies?: string[];
-}
-
 export class WorkflowService {
   private github: GitHubIntegration;
   private figma: FigmaIntegration;
@@ -25,7 +19,7 @@ export class WorkflowService {
   constructor(
     github: GitHubIntegration,
     figma: FigmaIntegration,
-    playwright: PlaywrightIntegration
+    playwright: PlaywrightIntegration,
   ) {
     this.github = github;
     this.figma = figma;
@@ -34,13 +28,13 @@ export class WorkflowService {
   }
 
   async executeDesignToCodeWorkflow(
-    context: WorkflowContext
+    context: WorkflowContext,
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
       this.logger.info(
-        `Starting design-to-code workflow for: ${context.componentName}`
+        `Starting design-to-code workflow for: ${context.componentName}`,
       );
 
       // Parallel execution of independent operations
@@ -60,7 +54,7 @@ export class WorkflowService {
       if (tokensResult.status === "rejected" || !tokensResult.value.success) {
         return this.handleError(
           "Failed to analyze design tokens",
-          tokensResult
+          tokensResult,
         );
       }
 
@@ -78,13 +72,13 @@ export class WorkflowService {
       const component = await this.generateReactComponent(
         frame,
         designTokens,
-        context.componentName
+        context.componentName,
       );
 
       // Save component files and prepare for commit
       const files = await this.saveComponentFiles(
         component,
-        context.outputPath
+        context.outputPath,
       );
 
       // Create commit with generated code
@@ -94,7 +88,7 @@ export class WorkflowService {
           path: file.relativePath,
           content: file.content,
         })),
-        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`
+        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`,
       );
 
       if (!commitResult.success) {
@@ -125,13 +119,13 @@ export class WorkflowService {
 
   async executeVisualTestingWorkflow(
     context: WorkflowContext,
-    componentUrl: string
+    componentUrl: string,
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
       this.logger.info(
-        `Starting visual testing workflow for: ${context.componentName}`
+        `Starting visual testing workflow for: ${context.componentName}`,
       );
 
       // Parallel execution of test operations
@@ -140,7 +134,7 @@ export class WorkflowService {
           `${context.componentName}-visual-test`,
           componentUrl,
           undefined,
-          join(context.outputPath, "visual-tests")
+          join(context.outputPath, "visual-tests"),
         ),
         this.playwright.testResponsiveDesign(componentUrl, [
           { width: 320, height: 568, name: "mobile" },
@@ -161,13 +155,13 @@ export class WorkflowService {
       const testResults = [];
 
       // Process visual test result
-      if (visualResult.status === "fulfilled" && visualResult.value.success) {
+      if (visualResult?.status === "fulfilled" && visualResult.value.success) {
         testResults.push(visualResult.value.data);
       }
 
       // Process responsive test result
       if (
-        responsiveResult.status === "fulfilled" &&
+        responsiveResult?.status === "fulfilled" &&
         responsiveResult.value.success
       ) {
         testResults.push({
@@ -179,7 +173,7 @@ export class WorkflowService {
 
       // Process accessibility test result
       if (
-        accessibilityResult.status === "fulfilled" &&
+        accessibilityResult?.status === "fulfilled" &&
         accessibilityResult.value.success
       ) {
         testResults.push({
@@ -202,19 +196,19 @@ export class WorkflowService {
         success: true,
         data: {
           visualTest:
-            visualResult.status === "fulfilled"
+            visualResult?.status === "fulfilled"
               ? visualResult.value.data
               : null,
           responsiveTest:
-            responsiveResult.status === "fulfilled"
+            responsiveResult?.status === "fulfilled"
               ? responsiveResult.value.data
               : null,
           accessibilityTest:
-            accessibilityResult.status === "fulfilled"
+            accessibilityResult?.status === "fulfilled"
               ? accessibilityResult.value.data
               : null,
           figmaImages:
-            imagesResult.status === "fulfilled"
+            imagesResult?.status === "fulfilled"
               ? imagesResult.value.data
               : null,
           duration,
@@ -230,7 +224,7 @@ export class WorkflowService {
   }
 
   async createPullRequestWithResults(
-    context: WorkflowContext
+    context: WorkflowContext,
   ): Promise<ToolResult> {
     try {
       const testSummary = this.generateTestSummary(context.testResults || []);
@@ -282,7 +276,7 @@ export class WorkflowService {
   private async generateReactComponent(
     frame: any,
     designTokens: any,
-    componentName: string
+    componentName: string,
   ): Promise<GeneratedComponent> {
     // Generate optimized React component with TypeScript
     const backgroundColor =
@@ -350,8 +344,8 @@ export const ${componentName}: React.FC<${componentName}Props> = ({
             ${frame.name}
           </h2>
           <p style={{ margin: '${
-            spacing / 2
-          }px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
+  spacing / 2
+}px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
             Generated from Figma design
           </p>
         </div>
@@ -363,49 +357,10 @@ export const ${componentName}: React.FC<${componentName}Props> = ({
 export default ${componentName};
 `;
 
-    // Generate optimized CSS
-    const cssContent = `/* ${componentName} Component Styles */
-.${componentName.toLowerCase()}-component {
-  box-sizing: border-box;
-  transition: all 0.2s ease-in-out;
-}
-
-.${componentName.toLowerCase()}-component:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.${componentName.toLowerCase()}-content {
-  text-align: center;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .${componentName.toLowerCase()}-component {
-    padding: ${spacing * 0.75}px;
-  }
-}
-
-@media (max-width: 480px) {
-  .${componentName.toLowerCase()}-component {
-    padding: ${spacing * 0.5}px;
-  }
-  
-  .${componentName.toLowerCase()}-content h2 {
-    font-size: 1rem !important;
-  }
-  
-  .${componentName.toLowerCase()}-content p {
-    font-size: 0.75rem !important;
-  }
-}
-`;
-
     return {
       name: componentName,
       filePath: `src/components/${componentName}`,
       content: componentCode,
-      cssContent,
       framework: "react",
       dependencies: ["react", "@types/react"],
     };
@@ -413,7 +368,7 @@ export default ${componentName};
 
   private async saveComponentFiles(
     component: GeneratedComponent & { cssContent?: string },
-    outputPath: string
+    outputPath: string,
   ): Promise<
     Array<{ relativePath: string; content: string; fullPath: string }>
   > {
@@ -496,7 +451,7 @@ export default ${componentName};
 
   private generatePRDescription(
     context: WorkflowContext,
-    testSummary: string
+    testSummary: string,
   ): string {
     return `# ${context.componentName} Component
 
