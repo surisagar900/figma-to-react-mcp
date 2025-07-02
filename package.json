@@ -1,6 +1,6 @@
 {
   "name": "figma-to-react-mcp",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Convert Figma designs to React components automatically. MCP server with GitHub, Figma, and Playwright integrations for seamless design-to-code workflow.",
   "type": "module",
   "main": "dist/index.js",
