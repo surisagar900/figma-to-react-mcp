@@ -1,0 +1,52 @@
+{
+  "name": "Frontend Dev MCP Server",
+  "description": "Unified MCP server for frontend developers with GitHub, Figma, and Playwright integrations",
+  "version": "1.0.0",
+  "mcpServers": {
+    "frontend-dev": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--env-file",
+        ".env",
+        "-v",
+        "${workspaceFolder}:/workspace",
+        "frontend-dev-mcp-server"
+      ],
+      "env": {
+        "WORKSPACE_PATH": "${workspaceFolder}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "design_to_code",
+      "description": "Convert Figma design to React component",
+      "usage": "Paste Figma URL with selected frame/component"
+    },
+    {
+      "name": "test_design_implementation",
+      "description": "Test component against Figma design",
+      "usage": "Provide Figma URL and component URL"
+    },
+    {
+      "name": "analyze_figma_design",
+      "description": "Extract design tokens and components",
+      "usage": "Paste any Figma file URL"
+    }
+  ],
+  "setup": {
+    "requirements": [
+      "Docker installed",
+      "GitHub Personal Access Token",
+      "Figma Access Token"
+    ],
+    "steps": [
+      "1. Create .env file with your tokens",
+      "2. Run: docker build -t frontend-dev-mcp-server .",
+      "3. Add this configuration to Cursor MCP settings"
+    ]
+  }
+}
