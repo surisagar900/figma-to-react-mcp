@@ -21,11 +21,6 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "docker:build": "docker build -t frontend-dev-mcp-server .",
-    "docker:run": "docker run --rm -i --env-file .env frontend-dev-mcp-server",
-    "docker:compose": "docker-compose up --build",
-    "setup:cursor": "./scripts/setup-cursor.sh",
-    "setup:env": "cp env.template .env && echo 'Please edit .env with your API tokens'",
     "postinstall": "npx playwright install chromium",
     "prepublishOnly": "npm run build",
     "prepack": "npm run build"
@@ -70,10 +65,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/frontend-dev-mcp-server.git"
+    "url": "git+https://github.com/sagarsuri/frontend-dev-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/frontend-dev-mcp-server/issues"
+    "url": "https://github.com/sagarsuri/frontend-dev-mcp-server/issues"
   },
-  "homepage": "https://github.com/your-username/frontend-dev-mcp-server#readme"
+  "homepage": "https://github.com/sagarsuri/frontend-dev-mcp-server#readme"
 }
