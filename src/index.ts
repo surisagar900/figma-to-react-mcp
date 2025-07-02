@@ -17,7 +17,7 @@ import { FigmaIntegration } from "./integrations/figma.js";
 import { PlaywrightIntegration } from "./integrations/playwright.js";
 import { WorkflowService } from "./services/workflow.js";
 
-class FrontendDevMCPServer {
+class FigmaToReactMCPServer {
   private server: Server;
   private config: Config;
   private logger: Logger;
@@ -386,14 +386,14 @@ class FrontendDevMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    this.logger.info("Frontend Dev MCP Server ready! 🎨➡️💻");
+    this.logger.info("Figma to React MCP Server ready! 🎨➡️💻");
     this.logger.info(
       "Available tools: design_to_code, test_design_implementation, create_design_pr, analyze_figma_design, setup_project_branch"
     );
 
     // Handle graceful shutdown
     const shutdown = async () => {
-      this.logger.info("Shutting down Frontend Dev MCP Server...");
+      this.logger.info("Shutting down Figma to React MCP Server...");
       await this.playwright.close();
       process.exit(0);
     };
@@ -454,7 +454,7 @@ For more information, visit: https://github.com/surisagar900/figma-to-react-mcp
   }
 
   try {
-    const server = new FrontendDevMCPServer();
+    const server = new FigmaToReactMCPServer();
     await server.run();
   } catch (error) {
     console.error("❌ Failed to start Figma to React MCP Server:", error);
