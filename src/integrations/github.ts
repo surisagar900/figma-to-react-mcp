@@ -4,8 +4,8 @@ import {
   PullRequestData,
   BranchInfo,
   ToolResult,
-} from "../types";
-import { Logger } from "../utils/logger";
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
 
 export class GitHubIntegration {
   private octokit: Octokit;

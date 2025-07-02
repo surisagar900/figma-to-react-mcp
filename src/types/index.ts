@@ -100,7 +100,7 @@ export interface ScreenshotComparison {
 export interface TestResult {
   name: string;
   passed: boolean;
-  error?: string;
+  error?: string | undefined;
   screenshots?: ScreenshotComparison[];
   duration: number;
 }

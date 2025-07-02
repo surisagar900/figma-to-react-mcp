@@ -1,4 +1,4 @@
-import { chromium, Browser, BrowserContext, Page } from "playwright";
+import { chromium, Browser, Page } from "playwright";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -8,8 +8,8 @@ import {
   ScreenshotComparison,
   TestResult,
   ToolResult,
-} from "../types";
-import { Logger } from "../utils/logger";
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
 
 export class PlaywrightIntegration {
   private config: PlaywrightConfig;
@@ -198,7 +198,7 @@ export class PlaywrightIntegration {
 
         if (comparisonResult.success) {
           comparison = comparisonResult.data;
-          passed = comparison.passed;
+          passed = comparison?.passed ?? false;
         } else {
           error = comparisonResult.error;
           passed = false;
@@ -214,10 +214,16 @@ export class PlaywrightIntegration {
       const testResult: TestResult = {
         name: testName,
         passed,
-        error,
-        screenshots: comparison ? [comparison] : undefined,
         duration,
       };
+
+      if (error) {
+        testResult.error = error;
+      }
+
+      if (comparison) {
+        testResult.screenshots = [comparison];
+      }
 
       this.logger.info(
         `Visual test completed: ${testName} - ${passed ? "PASSED" : "FAILED"}`

@@ -4,18 +4,11 @@
   "version": "1.0.0",
   "mcpServers": {
     "frontend-dev": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "--env-file",
-        ".env",
-        "-v",
-        "${workspaceFolder}:/workspace",
-        "frontend-dev-mcp-server"
-      ],
+      "command": "npx",
+      "args": ["frontend-dev-mcp-server"],
       "env": {
+        "GITHUB_TOKEN": "your_github_token_here",
+        "FIGMA_ACCESS_TOKEN": "your_figma_token_here",
         "WORKSPACE_PATH": "${workspaceFolder}"
       }
     }
@@ -39,14 +32,14 @@
   ],
   "setup": {
     "requirements": [
-      "Docker installed",
+      "Node.js 18+",
       "GitHub Personal Access Token",
       "Figma Access Token"
     ],
     "steps": [
-      "1. Create .env file with your tokens",
-      "2. Run: docker build -t frontend-dev-mcp-server .",
-      "3. Add this configuration to Cursor MCP settings"
+      "1. Run: npx frontend-dev-mcp-server --setup",
+      "2. Follow the prompts to enter your tokens",
+      "3. The configuration will be automatically added to Cursor"
     ]
   }
 }

@@ -1,313 +1,200 @@
 # Frontend Dev MCP Server
 
-A unified MCP (Model Context Protocol) server for frontend developers that combines GitHub, Figma, and Playwright integrations to streamline the design-to-code workflow.
+A unified MCP (Model Context Protocol) server for frontend developers that combines GitHub, Figma, and Playwright integrations to automate the design-to-code workflow.
 
-## 🚀 Features
+## ✨ Features
 
-### 🔄 End-to-End Workflows
+- **🎨 Figma Integration**: Extract designs, components, and design tokens from Figma files
+- **🐙 GitHub Integration**: Create branches, generate pull requests, and manage repository operations
+- **🎭 Playwright Integration**: Automated visual testing and browser automation
+- **🔄 Unified Workflow**: Convert Figma designs to React components and create PRs automatically
+- **📦 NPX Distribution**: Easy installation and setup via npx
 
-- **Design-to-Code**: Extract Figma designs and generate React components automatically
-- **Visual Testing**: Compare generated components with original Figma designs
-- **Automated PR Creation**: Create pull requests with test results and explanations
+## 🚀 Quick Start
 
-### 🎨 Figma Integration
-
-- Fetch design files and frames
-- Extract design tokens (colors, fonts, spacing)
-- Analyze component structures
-- Download design assets
-
-### 🐙 GitHub Integration
-
-- Create branches and pull requests
-- Commit generated code
-- Repository management
-- Automated workflow documentation
-
-### 🎭 Playwright Integration
-
-- Visual regression testing
-- Screenshot comparison
-- Responsive design testing
-- Accessibility validation
-- E2E testing capabilities
-
-## 📦 Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone <repository-url>
-   cd custom-mcp
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Install Playwright browsers**
-
-   ```bash
-   npx playwright install
-   ```
-
-4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API tokens
-   ```
-
-## ⚙️ Configuration
-
-Create a `.env` file with the following variables:
-
-```env
-# GitHub Configuration
-GITHUB_TOKEN=your_github_personal_access_token
-GITHUB_OWNER=your_github_username
-GITHUB_REPO=your_default_repo
-
-# Figma Configuration
-FIGMA_ACCESS_TOKEN=your_figma_access_token
-
-# Playwright Configuration
-PLAYWRIGHT_HEADLESS=true
-PLAYWRIGHT_TIMEOUT=30000
-
-# Server Configuration
-MCP_SERVER_NAME=frontend-dev-mcp-server
-LOG_LEVEL=info
-```
-
-### Getting API Tokens
-
-#### GitHub Token
-
-1. Go to GitHub Settings → Developer settings → Personal access tokens
-2. Generate a new token with `repo` and `workflow` scopes
-3. Copy the token to your `.env` file
-
-#### Figma Token
-
-1. Go to Figma → Settings → Account → Personal access tokens
-2. Generate a new token
-3. Copy the token to your `.env` file
-
-## 🏗️ Usage
-
-### Development Mode
+### Easy Installation with npx
 
 ```bash
-npm run dev
+# Interactive setup (recommended for first-time users)
+npx frontend-dev-mcp-server --setup
+
+# Or run directly if you have tokens configured
+GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx frontend-dev-mcp-server
 ```
 
-### Production Build
+The `--setup` command will:
 
-```bash
-npm run build
-npm start
-```
+- Prompt for your GitHub and Figma tokens
+- Configure environment variables
+- Set up Cursor MCP integration automatically
+- Create all necessary configuration files
 
-### Running Tests
+### Manual Setup
 
-```bash
-# Run all tests
-npm test
+1. **Get your API tokens**:
 
-# Run tests with coverage
-npm run test:coverage
+   - **GitHub**: Go to Settings → Developer settings → Personal access tokens → Generate new token with `repo` permissions
+   - **Figma**: Go to Figma Settings → Account → Personal access tokens → Generate new token
 
-# Run tests in watch mode
-npm run test:watch
-```
+2. **Run with environment variables**:
+   ```bash
+   GITHUB_TOKEN=your_github_token FIGMA_ACCESS_TOKEN=your_figma_token npx frontend-dev-mcp-server
+   ```
 
 ## 🛠️ Available Tools
 
-### Workflow Tools
+### 1. `design_to_code`
 
-#### `workflow_design_to_code`
+Converts Figma designs to React components and creates GitHub PRs.
 
-Execute complete design-to-code workflow from Figma to GitHub.
+**Example usage in Cursor**:
 
-**Parameters:**
+- Paste a Figma URL: `https://www.figma.com/file/abc123/Design?node-id=1%3A2`
+- Specify component name: `HeroButton`
+- Get a complete React component with GitHub PR
 
-- `figmaFileId`: Figma file ID
-- `frameId`: Frame ID to convert
-- `componentName`: Name for the generated component
-- `outputPath`: Output directory path
-- `githubBranch`: GitHub branch name
+### 2. `test_design_implementation`
 
-**Example:**
+Tests generated components against Figma designs using visual regression testing.
+
+### 3. `analyze_figma_design`
+
+Analyzes Figma designs and extracts design tokens, components, and structure.
+
+### 4. `create_design_pr`
+
+Creates GitHub PRs with generated components and test results.
+
+### 5. `setup_project_branch`
+
+Creates new GitHub branches for feature development.
+
+## 📋 CLI Commands
+
+```bash
+npx frontend-dev-mcp-server --setup    # Interactive setup
+npx frontend-dev-mcp-server --help     # Show help
+npx frontend-dev-mcp-server --version  # Show version
+npx frontend-dev-mcp-server            # Start MCP server
+```
+
+## ⚙️ Cursor Integration
+
+After running `npx frontend-dev-mcp-server --setup`, the MCP server will be automatically configured in Cursor.
+
+**Manual Cursor Setup** (if needed):
+Add this to your Cursor MCP settings:
 
 ```json
 {
-  "figmaFileId": "abc123def456",
-  "frameId": "1:2",
-  "componentName": "Hero Button",
-  "outputPath": "./src/components",
-  "githubBranch": "feature/hero-button"
+  "mcpServers": {
+    "frontend-dev": {
+      "command": "npx",
+      "args": ["frontend-dev-mcp-server"],
+      "env": {
+        "GITHUB_TOKEN": "your_github_token_here",
+        "FIGMA_ACCESS_TOKEN": "your_figma_token_here"
+      }
+    }
+  }
 }
 ```
 
-#### `workflow_visual_testing`
+## 🔧 Configuration
 
-Execute visual testing workflow with Figma comparison.
+### Environment Variables
 
-**Parameters:**
+**Required**:
 
-- `figmaFileId`: Figma file ID
-- `frameId`: Frame ID for comparison
-- `componentName`: Component name
-- `componentUrl`: URL of the component to test
-- `outputPath`: Output directory path
-- `githubBranch`: GitHub branch name
+- `GITHUB_TOKEN`: GitHub Personal Access Token with `repo` permissions
+- `FIGMA_ACCESS_TOKEN`: Figma Access Token from your account settings
 
-#### `workflow_create_pr_with_results`
+**Optional**:
 
-Create pull request with test results and component code.
+- `LOG_LEVEL`: Logging level (`debug`, `info`, `warn`, `error`) - default: `info`
+- `PLAYWRIGHT_BROWSER`: Browser to use (`chromium`, `firefox`, `webkit`) - default: `chromium`
 
-### GitHub Tools
+## 📚 Usage Examples
 
-#### `github_create_branch`
+### Basic Workflow
 
-Create a new branch in the GitHub repository.
+1. **Setup once**:
 
-### Figma Tools
+   ```bash
+   npx frontend-dev-mcp-server --setup
+   ```
 
-#### `figma_get_file`
+2. **In Cursor**, use the MCP tools:
+   - Open a Figma design
+   - Copy the URL (with node selection)
+   - Use the `design_to_code` tool
+   - Get a React component + GitHub PR automatically
 
-Get Figma file information and structure.
-
-## 🏛️ Architecture
+### Design to Code Flow
 
 ```
-src/
-├── config/           # Configuration management
-├── integrations/     # External service integrations
-│   ├── github.ts    # GitHub API integration
-│   ├── figma.ts     # Figma API integration
-│   └── playwright.ts # Playwright browser automation
-├── services/        # Business logic services
-│   └── workflow.ts  # Workflow orchestration
-├── types/           # TypeScript type definitions
-├── utils/           # Utility functions
-│   └── logger.ts    # Logging utility
-└── index.ts         # Main MCP server entry point
+Figma Design URL → Extract Design → Generate React Component → Create Tests → GitHub PR
 ```
 
-## 🧪 Testing
+## 🏗️ Development
 
-The project includes comprehensive unit tests for all major components:
-
-- **Configuration validation**
-- **Logger functionality**
-- **Integration services**
-- **Workflow orchestration**
-
-## 📝 Workflow Examples
-
-### Complete Design-to-Code Workflow
-
-1. **Extract Figma Design**
-
-   ```bash
-   # The workflow automatically:
-   # - Fetches the Figma frame
-   # - Analyzes design tokens
-   # - Extracts component structure
-   ```
-
-2. **Generate Component Code**
-
-   ```bash
-   # Generates:
-   # - React component with TypeScript
-   # - CSS styles from design tokens
-   # - Component documentation
-   ```
-
-3. **Create GitHub Branch & Commit**
-
-   ```bash
-   # Automatically:
-   # - Creates new branch
-   # - Commits generated files
-   # - Includes descriptive commit message
-   ```
-
-4. **Run Visual Tests**
-
-   ```bash
-   # Tests include:
-   # - Visual regression testing
-   # - Responsive design validation
-   # - Accessibility checks
-   ```
-
-5. **Create Pull Request**
-   ```bash
-   # PR includes:
-   # - Generated component code
-   # - Test results summary
-   # - Visual comparison screenshots
-   # - Implementation notes
-   ```
-
-## 🔧 Development
-
-### Project Structure
-
-- **TypeScript**: Strict type checking enabled
-- **ESLint**: Code linting and formatting
-- **Jest**: Unit testing framework
-- **Prettier**: Code formatting (optional)
-
-### Building
+### Local Development
 
 ```bash
+git clone <your-repo>
+cd frontend-dev-mcp-server
+npm install
 npm run build
+npm run dev
 ```
 
-### Linting
+### Testing
 
 ```bash
-npm run lint
-npm run lint:fix
+npm test
+npm run test:watch
+npm run test:coverage
 ```
+
+## 📦 Publishing
+
+To publish your own version:
+
+1. Update `package.json` with your package name
+2. Build the project: `npm run build`
+3. Publish: `npm publish`
+
+## 🛠️ Architecture
+
+- **MCP SDK**: Model Context Protocol implementation
+- **TypeScript**: Type-safe development
+- **Playwright**: Browser automation and testing
+- **Octokit**: GitHub API integration
+- **Axios**: HTTP client for Figma API
+- **Zod**: Runtime type validation
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+4. Add tests
+5. Submit a pull request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
 For issues and questions:
 
-1. Check the existing issues
-2. Create a new issue with detailed description
-3. Include relevant logs and configuration
-
-## 🎯 Roadmap
-
-- [ ] Support for Vue.js and Angular component generation
-- [ ] Advanced design token extraction (gradients, shadows)
-- [ ] Integration with design systems
-- [ ] Automated component documentation generation
-- [ ] Advanced accessibility testing
-- [ ] Performance testing integration
-- [ ] Multi-framework support
+- Create an issue in the GitHub repository
+- Run `npx frontend-dev-mcp-server --help` for CLI help
+- Check the interactive setup: `npx frontend-dev-mcp-server --setup`
 
 ---
 
-**Built with ❤️ for frontend developers who want to bridge the gap between design and code.**
+**Happy coding! 🎨➡️💻**
+
+Made with ❤️ for frontend developers who want to automate their design-to-code workflow.

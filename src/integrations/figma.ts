@@ -5,8 +5,8 @@ import {
   FigmaFrame,
   FigmaNode,
   ToolResult,
-} from "../types";
-import { Logger } from "../utils/logger";
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
 
 export class FigmaIntegration {
   private api: AxiosInstance;
@@ -19,7 +19,7 @@ export class FigmaIntegration {
     this.api = axios.create({
       baseURL: "https://api.figma.com/v1",
       headers: {
-        "X-Figma-Token": config.accessToken,
+        "X-Figma-Token": this.config.accessToken,
         "Content-Type": "application/json",
       },
     });

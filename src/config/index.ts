@@ -5,7 +5,7 @@ import {
   GitHubConfigSchema,
   FigmaConfigSchema,
   PlaywrightConfigSchema,
-} from "../types";
+} from "../types/index.js";
 
 // Load environment variables
 config();
@@ -68,7 +68,7 @@ export class Config {
           /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/
         );
 
-        if (match) {
+        if (match && match[1] && match[2]) {
           this.detectedOwner = match[1];
           this.detectedRepo = match[2];
           console.log(

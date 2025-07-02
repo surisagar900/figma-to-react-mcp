@@ -22,13 +22,23 @@ export class FigmaUrlParser {
 
       const [, fileId, fileName, nodeId] = match;
 
-      return {
+      if (!fileId) {
+        return null;
+      }
+
+      const result: FigmaUrlInfo = {
         fileId,
-        nodeId: nodeId ? this.decodeNodeId(nodeId) : undefined,
-        fileName: fileName
-          ? decodeURIComponent(fileName.replace(/-/g, " "))
-          : undefined,
       };
+
+      if (nodeId) {
+        result.nodeId = this.decodeNodeId(nodeId);
+      }
+
+      if (fileName) {
+        result.fileName = decodeURIComponent(fileName.replace(/-/g, " "));
+      }
+
+      return result;
     } catch (error) {
       console.error("Failed to parse Figma URL:", error);
       return null;
@@ -64,7 +74,7 @@ export class FigmaUrlParser {
 
     // Try to extract from URL
     const nodeMatch = input.match(this.FIGMA_NODE_REGEX);
-    if (nodeMatch) {
+    if (nodeMatch && nodeMatch[1]) {
       return this.decodeNodeId(nodeMatch[1]);
     }
 

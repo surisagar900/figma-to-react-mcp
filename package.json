@@ -2,7 +2,16 @@
   "name": "frontend-dev-mcp-server",
   "version": "1.0.0",
   "description": "A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations",
+  "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "frontend-dev-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "cursor-mcp-config.json"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
@@ -17,7 +26,9 @@
     "docker:compose": "docker-compose up --build",
     "setup:cursor": "./scripts/setup-cursor.sh",
     "setup:env": "cp env.template .env && echo 'Please edit .env with your API tokens'",
-    "postinstall": "npx playwright install chromium"
+    "postinstall": "npx playwright install chromium",
+    "prepublishOnly": "npm run build",
+    "prepack": "npm run build"
   },
   "keywords": [
     "mcp",

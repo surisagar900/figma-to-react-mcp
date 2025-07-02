@@ -9,13 +9,13 @@ import {
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import { Config } from "./config";
-import { Logger } from "./utils/logger";
-import { FigmaUrlParser } from "./utils/figma-parser";
-import { GitHubIntegration } from "./integrations/github";
-import { FigmaIntegration } from "./integrations/figma";
-import { PlaywrightIntegration } from "./integrations/playwright";
-import { WorkflowService } from "./services/workflow";
+import { Config } from "./config/index.js";
+import { Logger } from "./utils/logger.js";
+import { FigmaUrlParser } from "./utils/figma-parser.js";
+import { GitHubIntegration } from "./integrations/github.js";
+import { FigmaIntegration } from "./integrations/figma.js";
+import { PlaywrightIntegration } from "./integrations/playwright.js";
+import { WorkflowService } from "./services/workflow.js";
 
 class FrontendDevMCPServer {
   private server: Server;
@@ -42,17 +42,13 @@ class FrontendDevMCPServer {
     );
 
     // Initialize MCP server
-    this.server = new Server(
-      {
-        name: this.config.server.name,
-        version: this.config.server.version,
+    this.server = new Server({
+      name: this.config.server.name,
+      version: this.config.server.version,
+      capabilities: {
+        tools: {},
       },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
+    });
 
     this.setupHandlers();
   }
@@ -232,7 +228,11 @@ class FrontendDevMCPServer {
       const fileId = FigmaUrlParser.extractFileId(figmaInput);
       const nodeId = FigmaUrlParser.extractNodeId(figmaInput);
 
-      return { fileId, nodeId: nodeId || undefined };
+      const result: { fileId: string; nodeId?: string } = { fileId };
+      if (nodeId) {
+        result.nodeId = nodeId;
+      }
+      return result;
     } catch (error) {
       throw new McpError(
         ErrorCode.InvalidParams,
@@ -405,20 +405,75 @@ class FrontendDevMCPServer {
 
 // Start the server
 async function main() {
+  // Handle CLI arguments
+  const args = process.argv.slice(2);
+
+  if (args.includes("--setup")) {
+    const { CLISetup } = await import("./cli-setup.js");
+    const setup = new CLISetup();
+    await setup.run();
+    return;
+  }
+
+  if (args.includes("--version") || args.includes("-v")) {
+    console.log("frontend-dev-mcp-server v1.0.0");
+    process.exit(0);
+  }
+
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(`
+🎨 Frontend Dev MCP Server v1.0.0
+=================================
+
+A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations.
+
+Usage:
+  npx frontend-dev-mcp-server [options]
+
+Options:
+  --setup           Interactive setup for tokens and Cursor configuration
+  -v, --version     Show version number
+  -h, --help        Show help information
+
+Environment Variables Required:
+  GITHUB_TOKEN           Your GitHub personal access token
+  FIGMA_ACCESS_TOKEN     Your Figma access token
+
+Optional Environment Variables:
+  PLAYWRIGHT_BROWSER     Browser to use (default: chromium)
+  LOG_LEVEL             Logging level (default: info)
+
+Examples:
+  npx frontend-dev-mcp-server --setup    # Interactive setup
+  npx frontend-dev-mcp-server             # Start MCP server
+  GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx frontend-dev-mcp-server
+
+For more information, visit: https://github.com/your-username/frontend-dev-mcp-server
+`);
+    process.exit(0);
+  }
+
   try {
     const server = new FrontendDevMCPServer();
     await server.run();
   } catch (error) {
-    console.error("Failed to start Frontend Dev MCP Server:", error);
+    console.error("❌ Failed to start Frontend Dev MCP Server:", error);
     console.error(
-      "\nPlease ensure you have set up your environment variables:"
+      "\n🔧 Please ensure you have set up your environment variables:"
     );
-    console.error("- GITHUB_TOKEN: Your GitHub personal access token");
-    console.error("- FIGMA_ACCESS_TOKEN: Your Figma access token");
+    console.error("   • GITHUB_TOKEN: Your GitHub personal access token");
+    console.error("   • FIGMA_ACCESS_TOKEN: Your Figma access token");
+    console.error(
+      "\n💡 Run 'npx frontend-dev-mcp-server --setup' for interactive setup"
+    );
     process.exit(1);
   }
 }
 
-if (require.main === module) {
+// Check if this file is being run directly
+if (
+  process.argv[1] &&
+  import.meta.url === new URL(process.argv[1], "file:").href
+) {
   main().catch(console.error);
 }

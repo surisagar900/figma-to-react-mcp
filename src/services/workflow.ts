@@ -1,10 +1,14 @@
-import { GitHubIntegration } from "../integrations/github";
-import { FigmaIntegration } from "../integrations/figma";
-import { PlaywrightIntegration } from "../integrations/playwright";
-import { WorkflowContext, GeneratedComponent, ToolResult } from "../types";
-import { Logger } from "../utils/logger";
+import { GitHubIntegration } from "../integrations/github.js";
+import { FigmaIntegration } from "../integrations/figma.js";
+import { PlaywrightIntegration } from "../integrations/playwright.js";
+import {
+  WorkflowContext,
+  GeneratedComponent,
+  ToolResult,
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
 import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join, dirname } from "path";
+import { join } from "path";
 
 export class WorkflowService {
   private github: GitHubIntegration;
@@ -232,7 +236,7 @@ export class WorkflowService {
 
   private async generateReactComponent(
     frame: any,
-    designTokens: any,
+    _designTokens: any,
     componentName: string
   ): Promise<GeneratedComponent> {
     // This is a simplified code generation - in a real implementation,
@@ -261,24 +265,6 @@ export const ${componentName}: React.FC<${componentName}Props> = ({ className })
 };
 
 export default ${componentName};
-`;
-
-    const cssCode = `.${componentName.toLowerCase()} {
-  /* Generated styles from Figma design tokens */
-  ${designTokens.colors
-    .map((color: string, index: number) => `--color-${index + 1}: ${color};`)
-    .join("\n  ")}
-  
-  ${designTokens.fonts
-    .map((font: string, index: number) => `--font-${index + 1}: ${font};`)
-    .join("\n  ")}
-  
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
 `;
 
     return {
