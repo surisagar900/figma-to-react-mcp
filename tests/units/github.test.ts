@@ -1,44 +1,48 @@
 import { GitHubIntegration } from "../../src/integrations/github";
-import { GitHubConfig } from "../../src/types";
 
-// Mock Octokit
-jest.mock("@octokit/rest", () => ({
-  Octokit: jest.fn().mockImplementation(() => ({
-    rest: {
-      git: {
-        getRef: jest.fn(),
-        createRef: jest.fn(),
-        getCommit: jest.fn(),
-        createBlob: jest.fn(),
-        createTree: jest.fn(),
-        createCommit: jest.fn(),
-        updateRef: jest.fn(),
-      },
-      pulls: {
-        create: jest.fn(),
-      },
-      repos: {
-        listBranches: jest.fn(),
-        get: jest.fn(),
-      },
-    },
-  })),
-}));
+// Mock @octokit/rest at the top level
+jest.mock("@octokit/rest");
 
 describe("GitHubIntegration", () => {
   let githubIntegration: GitHubIntegration;
-  let mockConfig: GitHubConfig;
   let mockOctokit: any;
 
   beforeEach(() => {
-    mockConfig = {
+    // Clear all mocks
+    jest.clearAllMocks();
+
+    // Create mock octokit instance
+    mockOctokit = {
+      rest: {
+        git: {
+          getRef: jest.fn(),
+          createRef: jest.fn(),
+          getCommit: jest.fn(),
+          createBlob: jest.fn(),
+          createTree: jest.fn(),
+          createCommit: jest.fn(),
+          updateRef: jest.fn(),
+        },
+        pulls: {
+          create: jest.fn(),
+        },
+        repos: {
+          listBranches: jest.fn(),
+          get: jest.fn(),
+        },
+      },
+    };
+
+    // Mock the Octokit constructor to return our mock
+    const { Octokit } = require("@octokit/rest");
+    (Octokit as jest.Mock).mockImplementation(() => mockOctokit);
+
+    const mockConfig = {
       token: "test-token",
       owner: "test-owner",
       repo: "test-repo",
     };
 
-    const { Octokit } = require("@octokit/rest");
-    mockOctokit = new Octokit();
     githubIntegration = new GitHubIntegration(mockConfig);
   });
 
@@ -48,14 +52,15 @@ describe("GitHubIntegration", () => {
 
   describe("createBranch", () => {
     it("should create a new branch successfully", async () => {
-      const mockBaseRef = {
+      // Mock successful API responses
+      mockOctokit.rest.git.getRef.mockResolvedValue({
         data: {
           object: { sha: "base-sha-123" },
         },
-      };
-
-      mockOctokit.rest.git.getRef.mockResolvedValue(mockBaseRef);
-      mockOctokit.rest.git.createRef.mockResolvedValue({});
+      });
+      mockOctokit.rest.git.createRef.mockResolvedValue({
+        data: {},
+      });
 
       const result = await githubIntegration.createBranch("feature-branch");
 
@@ -91,15 +96,13 @@ describe("GitHubIntegration", () => {
 
   describe("createPullRequest", () => {
     it("should create a pull request successfully", async () => {
-      const mockPR = {
+      mockOctokit.rest.pulls.create.mockResolvedValue({
         data: {
           number: 123,
           html_url: "https://github.com/test-owner/test-repo/pull/123",
           title: "Test PR",
         },
-      };
-
-      mockOctokit.rest.pulls.create.mockResolvedValue(mockPR);
+      });
 
       const prData = {
         title: "Test PR",
@@ -147,7 +150,7 @@ describe("GitHubIntegration", () => {
 
   describe("listBranches", () => {
     it("should list repository branches successfully", async () => {
-      const mockBranches = {
+      mockOctokit.rest.repos.listBranches.mockResolvedValue({
         data: [
           {
             name: "main",
@@ -160,9 +163,7 @@ describe("GitHubIntegration", () => {
             protected: false,
           },
         ],
-      };
-
-      mockOctokit.rest.repos.listBranches.mockResolvedValue(mockBranches);
+      });
 
       const result = await githubIntegration.listBranches();
 
@@ -195,7 +196,7 @@ describe("GitHubIntegration", () => {
 
   describe("getRepository", () => {
     it("should get repository information successfully", async () => {
-      const mockRepo = {
+      mockOctokit.rest.repos.get.mockResolvedValue({
         data: {
           name: "test-repo",
           full_name: "test-owner/test-repo",
@@ -204,9 +205,7 @@ describe("GitHubIntegration", () => {
           private: false,
           html_url: "https://github.com/test-owner/test-repo",
         },
-      };
-
-      mockOctokit.rest.repos.get.mockResolvedValue(mockRepo);
+      });
 
       const result = await githubIntegration.getRepository();
 
