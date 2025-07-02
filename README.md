@@ -146,6 +146,45 @@ Figma Design URL → Extract Design Tokens → Generate React Component → Run 
                               TypeScript + CSS + Tests
 ```
 
+## 🚀 Release Management
+
+This package includes multiple approaches for version management:
+
+### Interactive Release (Recommended)
+
+```bash
+# Guided release with prompts
+npm run release
+```
+
+### Quick Analysis
+
+```bash
+# Analyze commits to suggest version bump
+npm run release:analyze
+```
+
+### Commit Helper
+
+```bash
+# Interactive commit message creation with conventional commits
+npm run commit
+```
+
+### Direct Release
+
+```bash
+npm run release:patch   # Bug fixes
+npm run release:minor   # New features
+npm run release:major   # Breaking changes
+```
+
+### GitHub Actions
+
+Use the "Manual Release" workflow in GitHub Actions for team releases.
+
+📖 **[Complete Release Guide](docs/RELEASE_PROCESS.md)**
+
 ## 🏗️ Development
 
 ### Local Development

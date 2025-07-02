@@ -448,7 +448,7 @@ Examples:
   npx figma-to-react-mcp             # Start MCP server
 GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx figma-to-react-mcp
 
-For more information, visit: https://github.com/sagarsuri/figma-to-react-mcp
+For more information, visit: https://github.com/surisagar900/figma-to-react-mcp
 `);
     process.exit(0);
   }
