@@ -2,6 +2,8 @@
 
 A powerful MCP (Model Context Protocol) server that converts Figma designs into React components automatically. Combines GitHub, Figma, and Playwright integrations for a seamless design-to-React workflow.
 
+> **Latest Updates**: Enhanced performance optimizations, browser pooling, request caching, and improved error handling for production-ready workflows.
+
 ## ✨ Features
 
 - **🎨 Figma Integration**: Extract designs, components, and design tokens from Figma files
