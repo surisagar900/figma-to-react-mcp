@@ -2,7 +2,6 @@ import { Logger } from "../../src/utils/logger";
 
 describe("Logger", () => {
   let logger: Logger;
-  let consoleSpy: jest.SpyInstance;
 
   beforeEach(() => {
     // Reset singleton instance
@@ -10,7 +9,7 @@ describe("Logger", () => {
     logger = Logger.getInstance("debug");
 
     // Mock console methods
-    consoleSpy = jest.spyOn(console, "debug").mockImplementation();
+    jest.spyOn(console, "debug").mockImplementation();
     jest.spyOn(console, "info").mockImplementation();
     jest.spyOn(console, "warn").mockImplementation();
     jest.spyOn(console, "error").mockImplementation();
