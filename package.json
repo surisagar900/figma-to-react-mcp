@@ -1,7 +1,7 @@
 {
   "name": "figma-to-react-mcp",
   "version": "1.0.0",
-  "description": "A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations",
+  "description": "Convert Figma designs to React components automatically. MCP server with GitHub, Figma, and Playwright integrations for seamless design-to-code workflow.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -31,13 +31,16 @@
     "release:major": "npm version major && npm publish"
   },
   "keywords": [
+    "figma",
+    "react",
+    "components",
+    "design-to-code",
     "mcp",
+    "typescript",
     "frontend",
     "github",
-    "figma",
     "playwright",
-    "development",
-    "design-to-code"
+    "automation"
   ],
   "author": "Frontend Dev MCP",
   "license": "MIT",

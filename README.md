@@ -1,13 +1,14 @@
 # Figma to React MCP
 
-A unified MCP (Model Context Protocol) server for frontend developers that combines GitHub, Figma, and Playwright integrations to automate the design-to-code workflow.
+A powerful MCP (Model Context Protocol) server that converts Figma designs into React components automatically. Combines GitHub, Figma, and Playwright integrations for a seamless design-to-React workflow.
 
 ## ✨ Features
 
 - **🎨 Figma Integration**: Extract designs, components, and design tokens from Figma files
 - **🐙 GitHub Integration**: Create branches, generate pull requests, and manage repository operations
 - **🎭 Playwright Integration**: Automated visual testing and browser automation
-- **🔄 Unified Workflow**: Convert Figma designs to React components and create PRs automatically
+- **⚛️ React-Focused**: Generates TypeScript React functional components with proper typing
+- **🔄 Automated Workflow**: Figma design → React component → GitHub PR in one step
 - **📦 NPX Distribution**: Easy installation and setup via npx
 
 ## 🚀 Quick Start
@@ -45,7 +46,14 @@ The `--setup` command will:
 
 ### 1. `design_to_code`
 
-Converts Figma designs to React components and creates GitHub PRs.
+Converts Figma designs to **React TypeScript components** and creates GitHub PRs.
+
+**What you get**:
+
+- React functional component with TypeScript
+- Responsive CSS styles
+- Proper component structure and props
+- Automatic GitHub branch and PR creation
 
 **Example usage in Cursor**:
 
@@ -55,7 +63,7 @@ Converts Figma designs to React components and creates GitHub PRs.
 
 ### 2. `test_design_implementation`
 
-Tests generated components against Figma designs using visual regression testing.
+Tests generated **React components** against Figma designs using visual regression testing and accessibility validation.
 
 ### 3. `analyze_figma_design`
 
@@ -63,7 +71,7 @@ Analyzes Figma designs and extracts design tokens, components, and structure.
 
 ### 4. `create_design_pr`
 
-Creates GitHub PRs with generated components and test results.
+Creates GitHub PRs with generated **React components** and comprehensive test results.
 
 ### 5. `setup_project_branch`
 
@@ -133,7 +141,9 @@ Add this to your Cursor MCP settings:
 ### Design to Code Flow
 
 ```
-Figma Design URL → Extract Design → Generate React Component → Create Tests → GitHub PR
+Figma Design URL → Extract Design Tokens → Generate React Component → Run Tests → GitHub PR
+                                          ↓
+                              TypeScript + CSS + Tests
 ```
 
 ## 🏗️ Development

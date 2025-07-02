@@ -119,7 +119,7 @@ export interface GeneratedComponent {
   name: string;
   filePath: string;
   content: string;
-  framework: 'react' | 'vue' | 'angular';
+  framework: 'react';
   dependencies: string[];
 }
 
