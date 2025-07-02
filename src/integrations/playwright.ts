@@ -1,20 +1,29 @@
-import { Browser, Page, chromium } from 'playwright';
-import { PNG } from 'pngjs';
-import pixelmatch from 'pixelmatch';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { Browser, BrowserContext, Page, chromium } from "playwright";
+import { PNG } from "pngjs";
+import pixelmatch from "pixelmatch";
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import { promises as fs } from "fs";
+import { join } from "path";
 import {
   PlaywrightConfig,
   ScreenshotComparison,
   TestResult,
   ToolResult,
-} from '../types/index.js';
-import { Logger } from '../utils/logger.js';
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
+
+interface BrowserPool {
+  browser: Browser;
+  contexts: BrowserContext[];
+  activeContexts: number;
+}
 
 export class PlaywrightIntegration {
   private config: PlaywrightConfig;
-  private browser: Browser | null = null;
+  private browserPool: BrowserPool | null = null;
   private logger: Logger;
+  private readonly maxContexts = 5;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(config: PlaywrightConfig) {
     this.config = config;
@@ -22,37 +31,79 @@ export class PlaywrightIntegration {
   }
 
   async initialize(): Promise<void> {
-    if (!this.browser) {
-      this.logger.info('Initializing Playwright browser');
-      this.browser = await chromium.launch({
-        headless: this.config.headless,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+    if (this.browserPool) return;
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
     }
+
+    this.initializationPromise = this.createBrowserPool();
+    return this.initializationPromise;
   }
 
-  async close(): Promise<void> {
-    if (this.browser) {
-      this.logger.info('Closing Playwright browser');
-      await this.browser.close();
-      this.browser = null;
+  private async createBrowserPool(): Promise<void> {
+    this.logger.info("Initializing Playwright browser pool");
+    const browser = await chromium.launch({
+      headless: this.config.headless,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    this.browserPool = {
+      browser,
+      contexts: [],
+      activeContexts: 0,
+    };
+  }
+
+  private async getContext(): Promise<BrowserContext> {
+    await this.initialize();
+
+    if (!this.browserPool) {
+      throw new Error("Browser pool not initialized");
     }
+
+    // Reuse existing context if available
+    if (this.browserPool.contexts.length > 0) {
+      const context = this.browserPool.contexts.pop()!;
+      this.browserPool.activeContexts++;
+      return context;
+    }
+
+    // Create new context if under limit
+    if (this.browserPool.activeContexts < this.maxContexts) {
+      const context = await this.browserPool.browser.newContext();
+      this.browserPool.activeContexts++;
+      return context;
+    }
+
+    // Wait for a context to become available
+    while (this.browserPool.contexts.length === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    return this.getContext();
+  }
+
+  private releaseContext(context: BrowserContext): void {
+    if (!this.browserPool) return;
+
+    this.browserPool.contexts.push(context);
+    this.browserPool.activeContexts--;
   }
 
   async captureScreenshot(
     url: string,
     selector?: string,
-    outputPath?: string,
+    outputPath?: string
   ): Promise<ToolResult> {
-    try {
-      await this.initialize();
-      this.logger.info(`Capturing screenshot for URL: ${url}`);
+    const context = await this.getContext();
 
-      const context = await this.browser!.newContext();
+    try {
+      this.logger.info(`Capturing screenshot for URL: ${url}`);
       const page = await context.newPage();
 
       await page.goto(url, {
-        waitUntil: 'networkidle',
+        waitUntil: "networkidle",
         timeout: this.config.timeout,
       });
 
@@ -68,9 +119,9 @@ export class PlaywrightIntegration {
         });
       }
 
-      await context.close();
-
+      await page.close();
       this.logger.info(`Screenshot saved: ${screenshotPath}`);
+
       return {
         success: true,
         data: { screenshotPath },
@@ -79,30 +130,50 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to capture screenshot: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
+    } finally {
+      this.releaseContext(context);
     }
   }
 
   async compareScreenshots(
     baseImagePath: string,
     currentImagePath: string,
-    threshold: number = 0.1,
+    threshold: number = 0.1
   ): Promise<ToolResult> {
     try {
       this.logger.info(
-        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`,
+        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`
       );
 
-      if (!existsSync(baseImagePath) || !existsSync(currentImagePath)) {
+      // Use async file checks
+      const [baseExists, currentExists] = await Promise.all([
+        fs
+          .access(baseImagePath)
+          .then(() => true)
+          .catch(() => false),
+        fs
+          .access(currentImagePath)
+          .then(() => true)
+          .catch(() => false),
+      ]);
+
+      if (!baseExists || !currentExists) {
         return {
           success: false,
-          error: 'One or both image files do not exist',
+          error: "One or both image files do not exist",
         };
       }
 
-      const baseImage = PNG.sync.read(readFileSync(baseImagePath));
-      const currentImage = PNG.sync.read(readFileSync(currentImagePath));
+      // Read images in parallel
+      const [baseImageBuffer, currentImageBuffer] = await Promise.all([
+        fs.readFile(baseImagePath),
+        fs.readFile(currentImagePath),
+      ]);
+
+      const baseImage = PNG.sync.read(baseImageBuffer);
+      const currentImage = PNG.sync.read(currentImageBuffer);
 
       if (
         baseImage.width !== currentImage.width ||
@@ -110,7 +181,7 @@ export class PlaywrightIntegration {
       ) {
         return {
           success: false,
-          error: 'Images have different dimensions',
+          error: "Images have different dimensions",
         };
       }
 
@@ -118,21 +189,22 @@ export class PlaywrightIntegration {
         width: baseImage.width,
         height: baseImage.height,
       });
+
       const pixelDifference = pixelmatch(
         baseImage.data,
         currentImage.data,
         diff.data,
         baseImage.width,
         baseImage.height,
-        { threshold },
+        { threshold }
       );
 
       const totalPixels = baseImage.width * baseImage.height;
       const similarity = ((totalPixels - pixelDifference) / totalPixels) * 100;
       const passed = similarity >= 100 - threshold * 100;
 
-      const diffImagePath = currentImagePath.replace('.png', '-diff.png');
-      writeFileSync(diffImagePath, PNG.sync.write(diff));
+      const diffImagePath = currentImagePath.replace(".png", "-diff.png");
+      await fs.writeFile(diffImagePath, PNG.sync.write(diff));
 
       const comparison: ScreenshotComparison = {
         baseImagePath,
@@ -145,18 +217,19 @@ export class PlaywrightIntegration {
 
       this.logger.info(
         `Screenshot comparison completed - Similarity: ${similarity.toFixed(
-          2,
-        )}%`,
+          2
+        )}%`
       );
+
       return {
         success: true,
         data: comparison,
       };
     } catch (error) {
-      this.logger.error('Failed to compare screenshots', error);
+      this.logger.error("Failed to compare screenshots", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -165,35 +238,42 @@ export class PlaywrightIntegration {
     testName: string,
     url: string,
     selector?: string,
-    baselineDir: string = './baselines',
+    baselineDir: string = "./baselines"
   ): Promise<ToolResult> {
     try {
       this.logger.info(`Running visual test: ${testName}`);
       const startTime = Date.now();
 
+      // Ensure baseline directory exists
+      await fs.mkdir(baselineDir, { recursive: true });
+
       // Capture current screenshot
+      const currentImagePath = join(baselineDir, `${testName}-current.png`);
       const screenshotResult = await this.captureScreenshot(
         url,
         selector,
-        join(baselineDir, `${testName}-current.png`),
+        currentImagePath
       );
 
       if (!screenshotResult.success) {
         return screenshotResult;
       }
 
-      const currentImagePath = screenshotResult.data.screenshotPath;
       const baseImagePath = join(baselineDir, `${testName}-baseline.png`);
-
       let comparison: ScreenshotComparison | undefined;
       let passed = true;
       let error: string | undefined;
 
-      // Compare with baseline if it exists
-      if (existsSync(baseImagePath)) {
+      // Check if baseline exists
+      const baselineExists = await fs
+        .access(baseImagePath)
+        .then(() => true)
+        .catch(() => false);
+
+      if (baselineExists) {
         const comparisonResult = await this.compareScreenshots(
           baseImagePath,
-          currentImagePath,
+          currentImagePath
         );
 
         if (comparisonResult.success) {
@@ -206,8 +286,7 @@ export class PlaywrightIntegration {
       } else {
         // Create baseline if it doesn't exist
         this.logger.info(`Creating baseline image: ${baseImagePath}`);
-        const baselineData = readFileSync(currentImagePath);
-        writeFileSync(baseImagePath, baselineData);
+        await fs.copyFile(currentImagePath, baseImagePath);
       }
 
       const duration = Date.now() - startTime;
@@ -226,8 +305,9 @@ export class PlaywrightIntegration {
       }
 
       this.logger.info(
-        `Visual test completed: ${testName} - ${passed ? 'PASSED' : 'FAILED'}`,
+        `Visual test completed: ${testName} - ${passed ? "PASSED" : "FAILED"}`
       );
+
       return {
         success: true,
         data: testResult,
@@ -236,90 +316,30 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to run visual test: ${testName}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
-  async runE2ETest(
-    testName: string,
-    testScript: (page: Page) => Promise<void>,
-  ): Promise<ToolResult> {
-    try {
-      await this.initialize();
-      this.logger.info(`Running E2E test: ${testName}`);
-      const startTime = Date.now();
-
-      const context = await this.browser!.newContext();
-      const page = await context.newPage();
-
-      try {
-        await testScript(page);
-
-        const duration = Date.now() - startTime;
-        const testResult: TestResult = {
-          name: testName,
-          passed: true,
-          duration,
-        };
-
-        await context.close();
-
-        this.logger.info(`E2E test completed: ${testName} - PASSED`);
-        return {
-          success: true,
-          data: testResult,
-        };
-      } catch (testError) {
-        await context.close();
-
-        const duration = Date.now() - startTime;
-        const testResult: TestResult = {
-          name: testName,
-          passed: false,
-          error:
-            testError instanceof Error
-              ? testError.message
-              : 'Unknown test error',
-          duration,
-        };
-
-        this.logger.error(`E2E test failed: ${testName}`, testError);
-        return {
-          success: true,
-          data: testResult,
-        };
-      }
-    } catch (error) {
-      this.logger.error(`Failed to setup E2E test: ${testName}`, error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async testResponsiveDesign(
     url: string,
-    viewports: Array<{ width: number; height: number; name: string }>,
+    viewports: Array<{ width: number; height: number; name: string }>
   ): Promise<ToolResult> {
-    try {
-      await this.initialize();
-      this.logger.info(`Testing responsive design for: ${url}`);
+    const context = await this.getContext();
 
-      const context = await this.browser!.newContext();
+    try {
+      this.logger.info(`Testing responsive design for: ${url}`);
       const page = await context.newPage();
 
-      const screenshots: Array<{ viewport: string; path: string }> = [];
-
-      for (const viewport of viewports) {
+      // Parallel screenshot capture
+      const screenshotPromises = viewports.map(async (viewport) => {
         await page.setViewportSize({
           width: viewport.width,
           height: viewport.height,
         });
 
         await page.goto(url, {
-          waitUntil: 'networkidle',
+          waitUntil: "networkidle",
           timeout: this.config.timeout,
         });
 
@@ -329,17 +349,19 @@ export class PlaywrightIntegration {
           fullPage: true,
         });
 
-        screenshots.push({
+        return {
           viewport: `${viewport.name} (${viewport.width}x${viewport.height})`,
           path: screenshotPath,
-        });
-      }
+        };
+      });
 
-      await context.close();
+      const screenshots = await Promise.all(screenshotPromises);
+      await page.close();
 
       this.logger.info(
-        `Responsive design test completed - ${screenshots.length} screenshots`,
+        `Responsive design test completed - ${screenshots.length} screenshots`
       );
+
       return {
         success: true,
         data: { screenshots },
@@ -348,91 +370,99 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to test responsive design: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
+    } finally {
+      this.releaseContext(context);
     }
   }
 
   async validateAccessibility(url: string): Promise<ToolResult> {
-    try {
-      await this.initialize();
-      this.logger.info(`Validating accessibility for: ${url}`);
+    const context = await this.getContext();
 
-      const context = await this.browser!.newContext();
+    try {
+      this.logger.info(`Validating accessibility for: ${url}`);
       const page = await context.newPage();
 
       await page.goto(url, {
-        waitUntil: 'networkidle',
+        waitUntil: "networkidle",
         timeout: this.config.timeout,
       });
 
       // Basic accessibility checks
-      const accessibilityIssues: string[] = [];
+      const issues = await page.evaluate(() => {
+        const problems: string[] = [];
 
-      // Check for alt attributes on images
-      const imagesWithoutAlt = await page.locator('img:not([alt])').count();
-      if (imagesWithoutAlt > 0) {
-        accessibilityIssues.push(
-          `${imagesWithoutAlt} images without alt attributes`,
-        );
-      }
+        // Check for missing alt attributes
+        const images = document.querySelectorAll("img");
+        images.forEach((img, index) => {
+          if (!img.alt) {
+            problems.push(`Image ${index + 1} is missing alt text`);
+          }
+        });
 
-      // Check for form labels
-      const inputsWithoutLabels = await page
-        .locator('input:not([aria-label]):not([aria-labelledby])')
-        .count();
-      if (inputsWithoutLabels > 0) {
-        accessibilityIssues.push(
-          `${inputsWithoutLabels} form inputs without proper labels`,
-        );
-      }
-
-      // Check for heading hierarchy
-      const headings = await page
-        .locator('h1, h2, h3, h4, h5, h6')
-        .allTextContents();
-      const headingLevels = await page
-        .locator('h1, h2, h3, h4, h5, h6')
-        .evaluateAll((elements) =>
-          elements.map((el) => parseInt(el.tagName.charAt(1))),
-        );
-
-      let previousLevel = 0;
-      let hasHeadingIssues = false;
-
-      for (const level of headingLevels) {
-        if (level > previousLevel + 1) {
-          hasHeadingIssues = true;
-          break;
+        // Check for heading hierarchy
+        const headings = document.querySelectorAll("h1, h2, h3, h4, h5, h6");
+        if (headings.length > 0) {
+          const firstHeading = headings[0];
+          if (firstHeading.tagName !== "H1") {
+            problems.push("Page should start with an H1 heading");
+          }
         }
-        previousLevel = level;
-      }
 
-      if (hasHeadingIssues) {
-        accessibilityIssues.push('Improper heading hierarchy detected');
-      }
+        // Check for form labels
+        const inputs = document.querySelectorAll("input, textarea, select");
+        inputs.forEach((input, index) => {
+          const id = input.getAttribute("id");
+          if (id) {
+            const label = document.querySelector(`label[for="${id}"]`);
+            if (!label) {
+              problems.push(`Form field ${index + 1} is missing a label`);
+            }
+          }
+        });
 
-      await context.close();
+        return problems;
+      });
 
-      const passed = accessibilityIssues.length === 0;
+      await page.close();
 
       this.logger.info(
-        `Accessibility validation completed - ${passed ? 'PASSED' : 'FAILED'}`,
+        `Accessibility validation completed - ${issues.length} issues found`
       );
+
       return {
         success: true,
         data: {
-          passed,
-          issues: accessibilityIssues,
-          headings,
+          passed: issues.length === 0,
+          issues,
         },
       };
     } catch (error) {
       this.logger.error(`Failed to validate accessibility: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
+    } finally {
+      this.releaseContext(context);
     }
+  }
+
+  async close(): Promise<void> {
+    if (this.browserPool) {
+      this.logger.info("Closing Playwright browser pool");
+
+      // Close all contexts
+      await Promise.all(
+        this.browserPool.contexts.map((context) => context.close())
+      );
+
+      // Close browser
+      await this.browserPool.browser.close();
+      this.browserPool = null;
+    }
+
+    this.initializationPromise = null;
   }
 }

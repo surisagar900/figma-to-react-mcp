@@ -1,64 +1,136 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
 import {
   FigmaConfig,
   FigmaDesign,
   FigmaFrame,
   FigmaNode,
   ToolResult,
-} from '../types/index.js';
-import { Logger } from '../utils/logger.js';
+} from "../types/index.js";
+import { Logger } from "../utils/logger.js";
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  ttl: number;
+}
+
+interface DesignTokenCache {
+  colors: Map<string, string>;
+  fonts: Map<string, string>;
+  spacing: Map<string, number>;
+  borderRadius: Map<string, number>;
+}
 
 export class FigmaIntegration {
   private api: AxiosInstance;
   private config: FigmaConfig;
   private logger: Logger;
+  private cache = new Map<string, CacheEntry<any>>();
+  private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes
+  private tokenCache: DesignTokenCache = {
+    colors: new Map(),
+    fonts: new Map(),
+    spacing: new Map(),
+    borderRadius: new Map(),
+  };
 
   constructor(config: FigmaConfig) {
     this.config = config;
     this.logger = Logger.getInstance();
     this.api = axios.create({
-      baseURL: 'https://api.figma.com/v1',
+      baseURL: "https://api.figma.com/v1",
       headers: {
-        'X-Figma-Token': this.config.accessToken,
-        'Content-Type': 'application/json',
+        "X-Figma-Token": this.config.accessToken,
+        "Content-Type": "application/json",
       },
+      timeout: 30000,
+      // Connection pooling
+      maxRedirects: 3,
     });
+
+    // Add response interceptor for caching
+    this.api.interceptors.response.use(
+      (response) => {
+        // Cache successful responses
+        if (response.config.url) {
+          this.setCache(response.config.url, response.data);
+        }
+        return response;
+      },
+      (error) => {
+        this.logger.error("Figma API request failed", {
+          url: error.config?.url,
+          status: error.response?.status,
+          message: error.message,
+        });
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  private setCache<T>(key: string, data: T, ttl = this.cacheTTL): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl,
+    });
+  }
+
+  private getCache<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
   }
 
   async getFile(fileId: string): Promise<ToolResult> {
     try {
-      this.logger.info(`Fetching Figma file: ${fileId}`);
+      const cacheKey = `/files/${fileId}`;
+      const cached = this.getCache(cacheKey);
 
-      const response = await this.api.get(`/files/${fileId}`);
+      if (cached) {
+        this.logger.debug(`Using cached Figma file: ${fileId}`);
+        return { success: true, data: cached };
+      }
+
+      this.logger.info(`Fetching Figma file: ${fileId}`);
+      const response = await this.api.get(cacheKey);
       const fileData = response.data;
 
       const figmaDesign: FigmaDesign = {
         id: fileId,
         name: fileData.name,
         lastModified: fileData.lastModified,
-        thumbnailUrl: fileData.thumbnailUrl || '',
+        thumbnailUrl: fileData.thumbnailUrl || "",
         version: fileData.version,
+      };
+
+      const result = {
+        design: figmaDesign,
+        document: fileData.document,
       };
 
       return {
         success: true,
-        data: {
-          design: figmaDesign,
-          document: fileData.document,
-        },
+        data: result,
       };
     } catch (error) {
       this.logger.error(`Failed to fetch Figma file: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  async getFrame(fileId: string, frameId: string): Promise<ToolResult> {
+  async getFrame(fileId: string, nodeId: string): Promise<ToolResult> {
     try {
-      this.logger.info(`Fetching Figma frame: ${frameId} from file: ${fileId}`);
+      this.logger.info(`Fetching Figma frame: ${fileId}/${nodeId}`);
 
       const fileResult = await this.getFile(fileId);
       if (!fileResult.success) {
@@ -66,73 +138,101 @@ export class FigmaIntegration {
       }
 
       const document = fileResult.data.document;
-      const frame = this.findNodeById(document, frameId);
+      const frameNode = this.findNodeById(document, nodeId);
 
-      if (!frame) {
+      if (!frameNode) {
         return {
           success: false,
-          error: `Frame with ID ${frameId} not found`,
+          error: `Frame with ID ${nodeId} not found`,
         };
       }
 
-      const figmaFrame: FigmaFrame = {
-        id: frame.id,
-        name: frame.name,
-        width: frame.absoluteBoundingBox.width,
-        height: frame.absoluteBoundingBox.height,
-        backgroundColor: this.extractBackgroundColor(frame),
-        children: frame.children || [],
+      const frame: FigmaFrame = {
+        id: frameNode.id,
+        name: frameNode.name,
+        width: frameNode.absoluteBoundingBox?.width || 0,
+        height: frameNode.absoluteBoundingBox?.height || 0,
+        x: frameNode.absoluteBoundingBox?.x || 0,
+        y: frameNode.absoluteBoundingBox?.y || 0,
+        backgroundColor: this.extractBackgroundColor(frameNode),
+        children: frameNode.children
+          ? frameNode.children.map((child: any) =>
+              this.convertToFigmaNode(child)
+            )
+          : [],
       };
 
       return {
         success: true,
-        data: figmaFrame,
+        data: frame,
       };
     } catch (error) {
-      this.logger.error(`Failed to fetch Figma frame: ${frameId}`, error);
+      this.logger.error(
+        `Failed to fetch Figma frame: ${fileId}/${nodeId}`,
+        error
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async getImages(fileId: string, nodeIds: string[]): Promise<ToolResult> {
     try {
-      this.logger.info(`Fetching images for nodes: ${nodeIds.join(', ')}`);
+      this.logger.info(`Fetching Figma images: ${fileId}`);
 
-      const response = await this.api.get(`/images/${fileId}`, {
-        params: {
-          ids: nodeIds.join(','),
-          format: 'png',
-          scale: 2,
-        },
+      const params = new URLSearchParams({
+        ids: nodeIds.join(","),
+        format: "png",
+        scale: "2",
       });
+
+      const response = await this.api.get(`/images/${fileId}?${params}`);
+      const imageData = response.data;
+
+      if (imageData.err) {
+        return {
+          success: false,
+          error: imageData.err,
+        };
+      }
 
       return {
         success: true,
-        data: response.data.images,
+        data: imageData.images,
       };
     } catch (error) {
-      this.logger.error('Failed to fetch Figma images', error);
+      this.logger.error(`Failed to fetch Figma images: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async analyzeDesignTokens(fileId: string): Promise<ToolResult> {
     try {
-      this.logger.info(`Analyzing design tokens for file: ${fileId}`);
+      const cacheKey = `tokens:${fileId}`;
+      const cached = this.getCache(cacheKey);
 
+      if (cached) {
+        this.logger.debug(`Using cached design tokens: ${fileId}`);
+        return { success: true, data: cached };
+      }
+
+      this.logger.info(`Analyzing design tokens for file: ${fileId}`);
       const fileResult = await this.getFile(fileId);
+
       if (!fileResult.success) {
         return fileResult;
       }
 
       const document = fileResult.data.document;
-      const designTokens = this.extractDesignTokens(document);
+      const designTokens = this.extractDesignTokensOptimized(document);
+
+      // Cache the result with longer TTL for design tokens
+      this.setCache(cacheKey, designTokens, this.cacheTTL * 2);
 
       return {
         success: true,
@@ -142,22 +242,32 @@ export class FigmaIntegration {
       this.logger.error(`Failed to analyze design tokens: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async extractComponents(fileId: string): Promise<ToolResult> {
     try {
-      this.logger.info(`Extracting components from file: ${fileId}`);
+      const cacheKey = `components:${fileId}`;
+      const cached = this.getCache(cacheKey);
 
+      if (cached) {
+        this.logger.debug(`Using cached components: ${fileId}`);
+        return { success: true, data: cached };
+      }
+
+      this.logger.info(`Extracting components from file: ${fileId}`);
       const fileResult = await this.getFile(fileId);
+
       if (!fileResult.success) {
         return fileResult;
       }
 
       const document = fileResult.data.document;
-      const components = this.findComponents(document);
+      const components = this.findComponentsOptimized(document);
+
+      this.setCache(cacheKey, components, this.cacheTTL * 2);
 
       return {
         success: true,
@@ -167,7 +277,7 @@ export class FigmaIntegration {
       this.logger.error(`Failed to extract components: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -190,96 +300,106 @@ export class FigmaIntegration {
   }
 
   private extractBackgroundColor(node: any): string {
-    if (node.backgroundColor) {
-      const { r, g, b, a = 1 } = node.backgroundColor;
-      return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(
-        b * 255,
-      )}, ${a})`;
-    }
-
     if (node.fills && node.fills.length > 0) {
-      const fill = node.fills[0];
-      if (fill.type === 'SOLID' && fill.color) {
-        const { r, g, b, a = 1 } = fill.color;
+      const solidFill = node.fills.find((fill: any) => fill.type === "SOLID");
+      if (solidFill && solidFill.color) {
+        const { r, g, b, a = 1 } = solidFill.color;
         return `rgba(${Math.round(r * 255)}, ${Math.round(
-          g * 255,
+          g * 255
         )}, ${Math.round(b * 255)}, ${a})`;
       }
     }
-
-    return 'transparent';
+    return "#ffffff";
   }
 
-  private extractDesignTokens(document: any): any {
-    const tokens = {
-      colors: new Set<string>(),
-      fonts: new Set<string>(),
-      spacing: new Set<number>(),
-      borderRadius: new Set<number>(),
+  private extractDesignTokensOptimized(document: any): any {
+    // Reset cache for new extraction
+    this.tokenCache = {
+      colors: new Map(),
+      fonts: new Map(),
+      spacing: new Map(),
+      borderRadius: new Map(),
     };
 
-    this.traverseNode(document, (node: any) => {
-      // Extract colors
-      if (node.fills) {
-        node.fills.forEach((fill: any) => {
-          if (fill.type === 'SOLID' && fill.color) {
-            const { r, g, b, a = 1 } = fill.color;
-            tokens.colors.add(
-              `rgba(${Math.round(r * 255)}, ${Math.round(
-                g * 255,
-              )}, ${Math.round(b * 255)}, ${a})`,
-            );
-          }
-        });
-      }
+    // Use iterative approach instead of recursive for better performance
+    const nodesToProcess = [document];
 
-      // Extract fonts
-      if (node.style) {
-        if (node.style.fontFamily) {
-          tokens.fonts.add(node.style.fontFamily);
-        }
-      }
+    while (nodesToProcess.length > 0) {
+      const node = nodesToProcess.pop()!;
+      this.processNodeForTokens(node);
 
-      // Extract spacing and dimensions
-      if (node.absoluteBoundingBox) {
-        tokens.spacing.add(node.absoluteBoundingBox.width);
-        tokens.spacing.add(node.absoluteBoundingBox.height);
-      }
-
-      // Extract border radius
-      if (node.cornerRadius !== undefined) {
-        tokens.borderRadius.add(node.cornerRadius);
-      }
-    });
-
-    return {
-      colors: Array.from(tokens.colors),
-      fonts: Array.from(tokens.fonts),
-      spacing: Array.from(tokens.spacing).sort((a, b) => a - b),
-      borderRadius: Array.from(tokens.borderRadius).sort((a, b) => a - b),
-    };
-  }
-
-  private findComponents(document: any): FigmaNode[] {
-    const components: FigmaNode[] = [];
-
-    this.traverseNode(document, (node: any) => {
-      if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET') {
-        components.push(this.convertToFigmaNode(node));
-      }
-    });
-
-    return components;
-  }
-
-  private traverseNode(node: any, callback: (node: any) => void): void {
-    callback(node);
-
-    if (node.children) {
-      for (const child of node.children) {
-        this.traverseNode(child, callback);
+      if (node.children) {
+        nodesToProcess.push(...node.children);
       }
     }
+
+    return {
+      colors: Array.from(this.tokenCache.colors.values()),
+      fonts: Array.from(this.tokenCache.fonts.values()),
+      spacing: Array.from(this.tokenCache.spacing.values()).sort(
+        (a, b) => a - b
+      ),
+      borderRadius: Array.from(this.tokenCache.borderRadius.values()).sort(
+        (a, b) => a - b
+      ),
+    };
+  }
+
+  private processNodeForTokens(node: any): void {
+    // Extract colors
+    if (node.fills) {
+      node.fills.forEach((fill: any) => {
+        if (fill.type === "SOLID" && fill.color) {
+          const { r, g, b, a = 1 } = fill.color;
+          const colorKey = `${r}-${g}-${b}-${a}`;
+          const colorValue = `rgba(${Math.round(r * 255)}, ${Math.round(
+            g * 255
+          )}, ${Math.round(b * 255)}, ${a})`;
+          this.tokenCache.colors.set(colorKey, colorValue);
+        }
+      });
+    }
+
+    // Extract fonts
+    if (node.style?.fontFamily) {
+      this.tokenCache.fonts.set(node.style.fontFamily, node.style.fontFamily);
+    }
+
+    // Extract spacing and dimensions
+    if (node.absoluteBoundingBox) {
+      const width = Math.round(node.absoluteBoundingBox.width);
+      const height = Math.round(node.absoluteBoundingBox.height);
+
+      if (width > 0) this.tokenCache.spacing.set(`w-${width}`, width);
+      if (height > 0) this.tokenCache.spacing.set(`h-${height}`, height);
+    }
+
+    // Extract border radius
+    if (typeof node.cornerRadius === "number") {
+      this.tokenCache.borderRadius.set(
+        `br-${node.cornerRadius}`,
+        node.cornerRadius
+      );
+    }
+  }
+
+  private findComponentsOptimized(document: any): FigmaNode[] {
+    const components: FigmaNode[] = [];
+    const nodesToProcess = [document];
+
+    while (nodesToProcess.length > 0) {
+      const node = nodesToProcess.pop()!;
+
+      if (node.type === "COMPONENT" || node.type === "COMPONENT_SET") {
+        components.push(this.convertToFigmaNode(node));
+      }
+
+      if (node.children) {
+        nodesToProcess.push(...node.children);
+      }
+    }
+
+    return components;
   }
 
   private convertToFigmaNode(node: any): FigmaNode {
@@ -298,6 +418,17 @@ export class FigmaIntegration {
       children: node.children
         ? node.children.map((child: any) => this.convertToFigmaNode(child))
         : undefined,
+    };
+  }
+
+  // Clear cache (useful for testing or memory management)
+  clearCache(): void {
+    this.cache.clear();
+    this.tokenCache = {
+      colors: new Map(),
+      fonts: new Map(),
+      spacing: new Map(),
+      borderRadius: new Map(),
     };
   }
 }

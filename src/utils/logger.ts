@@ -1,16 +1,34 @@
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
+interface LogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: number;
+  meta?: any;
+}
+
 export class Logger {
   private static instance: Logger;
   private logLevel: LogLevel;
+  private readonly levels: Record<LogLevel, number> = {
+    debug: 0,
+    info: 1,
+    warn: 2,
+    error: 3,
+  };
+  private readonly bufferSize = 100;
+  private logBuffer: LogEntry[] = [];
+  private flushTimer?: NodeJS.Timeout;
+  private readonly enableBuffering: boolean;
 
-  private constructor(logLevel: LogLevel = "info") {
+  private constructor(logLevel: LogLevel = "info", enableBuffering = false) {
     this.logLevel = logLevel;
+    this.enableBuffering = enableBuffering;
   }
 
-  static getInstance(logLevel?: LogLevel): Logger {
+  static getInstance(logLevel?: LogLevel, enableBuffering = false): Logger {
     if (!Logger.instance) {
-      Logger.instance = new Logger(logLevel);
+      Logger.instance = new Logger(logLevel, enableBuffering);
     }
     return Logger.instance;
   }
@@ -20,48 +38,99 @@ export class Logger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels: Record<LogLevel, number> = {
-      debug: 0,
-      info: 1,
-      warn: 2,
-      error: 3,
-    };
-    return levels[level] >= levels[this.logLevel];
+    return this.levels[level] >= this.levels[this.logLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, meta?: any): string {
-    const timestamp = new Date().toISOString();
-    const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
-    return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;
+  private formatMessage(entry: LogEntry): string {
+    const timestamp = new Date(entry.timestamp).toISOString();
+    const metaStr = entry.meta ? ` ${JSON.stringify(entry.meta)}` : "";
+    return `[${timestamp}] [${entry.level.toUpperCase()}] ${
+      entry.message
+    }${metaStr}`;
+  }
+
+  private log(level: LogLevel, message: string, meta?: any): void {
+    if (!this.shouldLog(level)) return;
+
+    const entry: LogEntry = {
+      level,
+      message,
+      timestamp: Date.now(),
+      meta,
+    };
+
+    if (this.enableBuffering) {
+      this.logBuffer.push(entry);
+      if (this.logBuffer.length >= this.bufferSize) {
+        this.flush();
+      } else if (!this.flushTimer) {
+        this.flushTimer = setTimeout(() => this.flush(), 1000);
+      }
+    } else {
+      this.writeLog(entry);
+    }
+  }
+
+  private writeLog(entry: LogEntry): void {
+    const formatted = this.formatMessage(entry);
+    switch (entry.level) {
+      case "debug":
+        console.debug(formatted);
+        break;
+      case "info":
+        console.info(formatted);
+        break;
+      case "warn":
+        console.warn(formatted);
+        break;
+      case "error":
+        console.error(formatted);
+        break;
+    }
+  }
+
+  private flush(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = undefined;
+    }
+
+    this.logBuffer.forEach((entry) => this.writeLog(entry));
+    this.logBuffer = [];
   }
 
   debug(message: string, meta?: any): void {
-    if (this.shouldLog("debug")) {
-      console.debug(this.formatMessage("debug", message, meta));
-    }
+    this.log("debug", message, meta);
   }
 
   info(message: string, meta?: any): void {
-    if (this.shouldLog("info")) {
-      console.info(this.formatMessage("info", message, meta));
-    }
+    this.log("info", message, meta);
   }
 
   warn(message: string, meta?: any): void {
-    if (this.shouldLog("warn")) {
-      console.warn(this.formatMessage("warn", message, meta));
-    }
+    this.log("warn", message, meta);
   }
 
   error(message: string, meta?: any): void {
-    if (this.shouldLog("error")) {
-      console.error(this.formatMessage("error", message, meta));
-    }
+    this.log("error", message, meta);
   }
 
   success(message: string, meta?: any): void {
     if (this.shouldLog("info")) {
-      console.log(`✅ ${this.formatMessage("info", message, meta)}`);
+      const entry: LogEntry = {
+        level: "info",
+        message: `✅ ${message}`,
+        timestamp: Date.now(),
+        meta,
+      };
+      this.writeLog(entry);
+    }
+  }
+
+  // Force flush remaining logs (useful for shutdown)
+  forceFlush(): void {
+    if (this.enableBuffering && this.logBuffer.length > 0) {
+      this.flush();
     }
   }
 }
