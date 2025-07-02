@@ -24,7 +24,7 @@
     "postinstall": "npx playwright install chromium",
     "prepublishOnly": "npm run build && npm test && npm run lint",
     "prepack": "npm run build",
-    "version": "npm run build && git add dist/",
+    "version": "npm run build",
     "release": "tsx src/cli-release.ts",
     "release:analyze": "node scripts/analyze-commits.cjs",
     "commit": "node scripts/commit-helper.cjs",
