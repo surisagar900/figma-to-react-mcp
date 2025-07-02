@@ -416,13 +416,13 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log("frontend-dev-mcp-server v1.0.0");
+    console.log("figma-to-react-mcp v2.0.0");
     process.exit(0);
   }
 
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-🎨 Frontend Dev MCP Server v1.0.0
+🎨 Figma to React MCP v2.0.0
 =================================
 
 A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations.
@@ -457,7 +457,7 @@ For more information, visit: https://github.com/surisagar900/figma-to-react-mcp
     const server = new FrontendDevMCPServer();
     await server.run();
   } catch (error) {
-    console.error("❌ Failed to start Frontend Dev MCP Server:", error);
+    console.error("❌ Failed to start Figma to React MCP Server:", error);
     console.error(
       "\n🔧 Please ensure you have set up your environment variables:"
     );

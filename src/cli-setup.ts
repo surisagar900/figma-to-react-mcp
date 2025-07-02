@@ -96,9 +96,9 @@ class CLISetup {
 
     const mcpConfig = {
       mcpServers: {
-        "frontend-dev": {
+        "figma-to-react-mcp": {
           command: "npx",
-          args: ["frontend-dev-mcp-server"],
+          args: ["figma-to-react-mcp"],
           env: {
             GITHUB_TOKEN: config.githubToken,
             FIGMA_ACCESS_TOKEN: config.figmaToken,
@@ -134,7 +134,7 @@ class CLISetup {
   }
 
   private async createEnvFile(config: SetupConfig): Promise<void> {
-    const envContent = `# Frontend Dev MCP Server Configuration
+    const envContent = `# Figma to React MCP Configuration
 GITHUB_TOKEN=${config.githubToken}
 FIGMA_ACCESS_TOKEN=${config.figmaToken}
 
@@ -149,7 +149,7 @@ PLAYWRIGHT_BROWSER=chromium
 
   async run(): Promise<void> {
     console.log(`
-🎨 Frontend Dev MCP Server Setup
+🎨 Figma to React MCP Setup
 ================================
 
 This setup will configure your MCP server with GitHub and Figma integrations.

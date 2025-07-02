@@ -465,7 +465,7 @@ ${testSummary}
 
 ---
 
-*This PR was automatically generated using the Frontend Dev MCP Server*
+*This PR was automatically generated using Figma to React MCP*
 `;
   }
 }

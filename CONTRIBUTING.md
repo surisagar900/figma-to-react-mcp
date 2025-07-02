@@ -1,4 +1,4 @@
-# Contributing to Frontend Dev MCP Server
+# Contributing to Figma to React MCP
 
 ## Development Workflow
 

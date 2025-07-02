@@ -3,7 +3,7 @@
   "description": "Convert Figma designs to React components automatically with GitHub integration and visual testing",
   "version": "1.0.0",
   "mcpServers": {
-    "frontend-dev": {
+    "figma-to-react-mcp": {
       "command": "npx",
       "args": ["figma-to-react-mcp"],
       "env": {

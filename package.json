@@ -45,7 +45,7 @@
     "playwright",
     "automation"
   ],
-  "author": "Frontend Dev MCP",
+  "author": "Figma to React MCP",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0",

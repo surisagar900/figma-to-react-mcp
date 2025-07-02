@@ -96,7 +96,7 @@ Add this to your Cursor MCP settings:
 ```json
 {
   "mcpServers": {
-    "frontend-dev": {
+    "figma-to-react-mcp": {
       "command": "npx",
       "args": ["figma-to-react-mcp"],
       "env": {
@@ -129,7 +129,7 @@ Add this to your Cursor MCP settings:
 1. **Setup once**:
 
    ```bash
-   npx frontend-dev-mcp-server --setup
+   npx figma-to-react-mcp --setup
    ```
 
 2. **In Cursor**, use the MCP tools:
