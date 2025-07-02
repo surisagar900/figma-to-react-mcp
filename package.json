@@ -3,9 +3,9 @@
   "version": "2.0.0",
   "description": "Convert Figma designs to React components automatically. MCP server with GitHub, Figma, and Playwright integrations for seamless design-to-code workflow.",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "bin": {
-    "figma-to-react-mcp": "dist/index.js"
+    "figma-to-react-mcp": "dist/src/index.js"
   },
   "files": [
     "dist/**/*",
@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
