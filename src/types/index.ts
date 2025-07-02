@@ -1,10 +1,10 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Common types
 export interface ServerConfig {
   name: string;
   version: string;
-  logLevel: "debug" | "info" | "warn" | "error";
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
 }
 
 // GitHub types
@@ -119,7 +119,7 @@ export interface GeneratedComponent {
   name: string;
   filePath: string;
   content: string;
-  framework: "react" | "vue" | "angular";
+  framework: 'react' | 'vue' | 'angular';
   dependencies: string[];
 }
 

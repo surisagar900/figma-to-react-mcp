@@ -1,14 +1,14 @@
-import { GitHubIntegration } from "../integrations/github.js";
-import { FigmaIntegration } from "../integrations/figma.js";
-import { PlaywrightIntegration } from "../integrations/playwright.js";
+import { GitHubIntegration } from '../integrations/github.js';
+import { FigmaIntegration } from '../integrations/figma.js';
+import { PlaywrightIntegration } from '../integrations/playwright.js';
 import {
-  WorkflowContext,
   GeneratedComponent,
   ToolResult,
-} from "../types/index.js";
-import { Logger } from "../utils/logger.js";
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join } from "path";
+  WorkflowContext,
+} from '../types/index.js';
+import { Logger } from '../utils/logger.js';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 export class WorkflowService {
   private github: GitHubIntegration;
@@ -19,7 +19,7 @@ export class WorkflowService {
   constructor(
     github: GitHubIntegration,
     figma: FigmaIntegration,
-    playwright: PlaywrightIntegration
+    playwright: PlaywrightIntegration,
   ) {
     this.github = github;
     this.figma = figma;
@@ -28,17 +28,17 @@ export class WorkflowService {
   }
 
   async executeDesignToCodeWorkflow(
-    context: WorkflowContext
+    context: WorkflowContext,
   ): Promise<ToolResult> {
     try {
       this.logger.info(
-        `Starting design-to-code workflow for: ${context.componentName}`
+        `Starting design-to-code workflow for: ${context.componentName}`,
       );
 
       // Step 1: Fetch Figma design
       const frameResult = await this.figma.getFrame(
         context.figmaFileId,
-        context.frameId
+        context.frameId,
       );
       if (!frameResult.success) {
         return frameResult;
@@ -49,7 +49,7 @@ export class WorkflowService {
 
       // Step 2: Analyze design tokens
       const tokensResult = await this.figma.analyzeDesignTokens(
-        context.figmaFileId
+        context.figmaFileId,
       );
       if (!tokensResult.success) {
         return tokensResult;
@@ -61,7 +61,7 @@ export class WorkflowService {
       const component = await this.generateReactComponent(
         frame,
         designTokens,
-        context.componentName
+        context.componentName,
       );
 
       // Step 4: Create GitHub branch
@@ -73,7 +73,7 @@ export class WorkflowService {
       // Step 5: Save component files locally and prepare for commit
       const files = await this.saveComponentFiles(
         component,
-        context.outputPath
+        context.outputPath,
       );
 
       // Step 6: Create commit with generated code
@@ -83,14 +83,14 @@ export class WorkflowService {
           path: file.relativePath,
           content: file.content,
         })),
-        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`
+        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`,
       );
 
       if (!commitResult.success) {
         return commitResult;
       }
 
-      this.logger.info(`Design-to-code workflow completed successfully`);
+      this.logger.info('Design-to-code workflow completed successfully');
       return {
         success: true,
         data: {
@@ -101,21 +101,21 @@ export class WorkflowService {
         },
       };
     } catch (error) {
-      this.logger.error("Design-to-code workflow failed", error);
+      this.logger.error('Design-to-code workflow failed', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async executeVisualTestingWorkflow(
     context: WorkflowContext,
-    componentUrl: string
+    componentUrl: string,
   ): Promise<ToolResult> {
     try {
       this.logger.info(
-        `Starting visual testing workflow for: ${context.componentName}`
+        `Starting visual testing workflow for: ${context.componentName}`,
       );
 
       // Step 1: Get Figma design images for comparison
@@ -131,7 +131,7 @@ export class WorkflowService {
         `${context.componentName}-visual-test`,
         componentUrl,
         undefined,
-        join(context.outputPath, "visual-tests")
+        join(context.outputPath, 'visual-tests'),
       );
 
       if (!testResult.success) {
@@ -142,21 +142,21 @@ export class WorkflowService {
       const responsiveResult = await this.playwright.testResponsiveDesign(
         componentUrl,
         [
-          { width: 320, height: 568, name: "mobile" },
-          { width: 768, height: 1024, name: "tablet" },
-          { width: 1440, height: 900, name: "desktop" },
-        ]
+          { width: 320, height: 568, name: 'mobile' },
+          { width: 768, height: 1024, name: 'tablet' },
+          { width: 1440, height: 900, name: 'desktop' },
+        ],
       );
 
       // Step 4: Validate accessibility
       const accessibilityResult = await this.playwright.validateAccessibility(
-        componentUrl
+        componentUrl,
       );
 
       context.testResults = [testResult.data];
       if (responsiveResult.success) {
         context.testResults.push({
-          name: "responsive-design-test",
+          name: 'responsive-design-test',
           passed: true,
           duration: 0,
         });
@@ -164,17 +164,17 @@ export class WorkflowService {
 
       if (accessibilityResult.success) {
         context.testResults.push({
-          name: "accessibility-test",
+          name: 'accessibility-test',
           passed: accessibilityResult.data.passed,
           error:
             accessibilityResult.data.issues.length > 0
-              ? accessibilityResult.data.issues.join(", ")
+              ? accessibilityResult.data.issues.join(', ')
               : undefined,
           duration: 0,
         });
       }
 
-      this.logger.info(`Visual testing workflow completed`);
+      this.logger.info('Visual testing workflow completed');
       return {
         success: true,
         data: {
@@ -188,16 +188,16 @@ export class WorkflowService {
         },
       };
     } catch (error) {
-      this.logger.error("Visual testing workflow failed", error);
+      this.logger.error('Visual testing workflow failed', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async createPullRequestWithResults(
-    context: WorkflowContext
+    context: WorkflowContext,
   ): Promise<ToolResult> {
     try {
       this.logger.info(`Creating pull request for: ${context.componentName}`);
@@ -209,7 +209,7 @@ export class WorkflowService {
         title: `feat: Add ${context.componentName} component`,
         body: prBody,
         head: context.githubBranch,
-        base: "main",
+        base: 'main',
         draft: false,
       });
 
@@ -226,10 +226,10 @@ export class WorkflowService {
         },
       };
     } catch (error) {
-      this.logger.error("Failed to create pull request", error);
+      this.logger.error('Failed to create pull request', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -237,7 +237,7 @@ export class WorkflowService {
   private async generateReactComponent(
     frame: any,
     _designTokens: any,
-    componentName: string
+    componentName: string,
   ): Promise<GeneratedComponent> {
     // This is a simplified code generation - in a real implementation,
     // you'd have more sophisticated parsing of Figma design elements
@@ -271,14 +271,14 @@ export default ${componentName};
       name: componentName,
       filePath: `src/components/${componentName}`,
       content: componentCode,
-      framework: "react",
-      dependencies: ["react"],
+      framework: 'react',
+      dependencies: ['react'],
     };
   }
 
   private async saveComponentFiles(
     component: GeneratedComponent,
-    outputPath: string
+    outputPath: string,
   ): Promise<
     Array<{ relativePath: string; content: string; fullPath: string }>
   > {
@@ -317,7 +317,7 @@ export default ${componentName};
 
     // Save index file for easier imports
     const indexContent = `export { default } from './${component.name}';\nexport * from './${component.name}';`;
-    const indexFile = join(componentDir, "index.ts");
+    const indexFile = join(componentDir, 'index.ts');
     const indexRelativePath = `${component.filePath}/index.ts`;
     writeFileSync(indexFile, indexContent);
     files.push({
@@ -350,22 +350,22 @@ export default ${componentName};
     const passedTests = testResults.filter((test) => test.passed).length;
     const failedTests = totalTests - passedTests;
 
-    let summary = `## Test Results Summary\n\n`;
+    let summary = '## Test Results Summary\n\n';
     summary += `- **Total Tests**: ${totalTests}\n`;
     summary += `- **Passed**: ${passedTests} ✅\n`;
     summary += `- **Failed**: ${failedTests} ${
-      failedTests > 0 ? "❌" : "✅"
+      failedTests > 0 ? '❌' : '✅'
     }\n\n`;
 
     if (testResults.length > 0) {
-      summary += `### Individual Test Results\n\n`;
+      summary += '### Individual Test Results\n\n';
       testResults.forEach((test) => {
-        const status = test.passed ? "✅ PASS" : "❌ FAIL";
+        const status = test.passed ? '✅ PASS' : '❌ FAIL';
         summary += `- **${test.name}**: ${status}`;
         if (test.error) {
           summary += ` - ${test.error}`;
         }
-        summary += `\n`;
+        summary += '\n';
       });
     }
 
@@ -374,7 +374,7 @@ export default ${componentName};
 
   private generatePRDescription(
     context: WorkflowContext,
-    testSummary: string
+    testSummary: string,
   ): string {
     return `# ${context.componentName} Component
 

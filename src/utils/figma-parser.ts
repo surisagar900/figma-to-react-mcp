@@ -35,12 +35,12 @@ export class FigmaUrlParser {
       }
 
       if (fileName) {
-        result.fileName = decodeURIComponent(fileName.replace(/-/g, " "));
+        result.fileName = decodeURIComponent(fileName.replace(/-/g, ' '));
       }
 
       return result;
     } catch (error) {
-      console.error("Failed to parse Figma URL:", error);
+      console.error('Failed to parse Figma URL:', error);
       return null;
     }
   }
@@ -60,7 +60,7 @@ export class FigmaUrlParser {
       return urlInfo.fileId;
     }
 
-    throw new Error("Invalid Figma file ID or URL format");
+    throw new Error('Invalid Figma file ID or URL format');
   }
 
   /**
@@ -69,7 +69,7 @@ export class FigmaUrlParser {
   static extractNodeId(input: string): string | null {
     // If it looks like a node ID already (format: 1:2 or 1-2)
     if (/^\d+[-:]\d+$/.test(input)) {
-      return input.replace("-", ":");
+      return input.replace('-', ':');
     }
 
     // Try to extract from URL
@@ -88,7 +88,7 @@ export class FigmaUrlParser {
     try {
       // Figma URLs encode node IDs like "1%3A2" which should become "1:2"
       const decoded = decodeURIComponent(encodedNodeId);
-      return decoded.replace(/%3A/g, ":");
+      return decoded.replace(/%3A/g, ':');
     } catch {
       return encodedNodeId;
     }
@@ -114,10 +114,10 @@ export class FigmaUrlParser {
   static createFigmaUrl(
     fileId: string,
     nodeId?: string,
-    fileName?: string
+    fileName?: string,
   ): string {
     const baseUrl = `https://www.figma.com/file/${fileId}/${
-      fileName || "design"
+      fileName || 'design'
     }`;
 
     if (nodeId) {

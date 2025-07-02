@@ -1,15 +1,15 @@
-import { chromium, Browser, Page } from "playwright";
-import { PNG } from "pngjs";
-import pixelmatch from "pixelmatch";
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { Browser, Page, chromium } from 'playwright';
+import { PNG } from 'pngjs';
+import pixelmatch from 'pixelmatch';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import {
   PlaywrightConfig,
   ScreenshotComparison,
   TestResult,
   ToolResult,
-} from "../types/index.js";
-import { Logger } from "../utils/logger.js";
+} from '../types/index.js';
+import { Logger } from '../utils/logger.js';
 
 export class PlaywrightIntegration {
   private config: PlaywrightConfig;
@@ -23,17 +23,17 @@ export class PlaywrightIntegration {
 
   async initialize(): Promise<void> {
     if (!this.browser) {
-      this.logger.info("Initializing Playwright browser");
+      this.logger.info('Initializing Playwright browser');
       this.browser = await chromium.launch({
         headless: this.config.headless,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
     }
   }
 
   async close(): Promise<void> {
     if (this.browser) {
-      this.logger.info("Closing Playwright browser");
+      this.logger.info('Closing Playwright browser');
       await this.browser.close();
       this.browser = null;
     }
@@ -42,7 +42,7 @@ export class PlaywrightIntegration {
   async captureScreenshot(
     url: string,
     selector?: string,
-    outputPath?: string
+    outputPath?: string,
   ): Promise<ToolResult> {
     try {
       await this.initialize();
@@ -52,7 +52,7 @@ export class PlaywrightIntegration {
       const page = await context.newPage();
 
       await page.goto(url, {
-        waitUntil: "networkidle",
+        waitUntil: 'networkidle',
         timeout: this.config.timeout,
       });
 
@@ -79,7 +79,7 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to capture screenshot: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -87,17 +87,17 @@ export class PlaywrightIntegration {
   async compareScreenshots(
     baseImagePath: string,
     currentImagePath: string,
-    threshold: number = 0.1
+    threshold: number = 0.1,
   ): Promise<ToolResult> {
     try {
       this.logger.info(
-        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`
+        `Comparing screenshots: ${baseImagePath} vs ${currentImagePath}`,
       );
 
       if (!existsSync(baseImagePath) || !existsSync(currentImagePath)) {
         return {
           success: false,
-          error: "One or both image files do not exist",
+          error: 'One or both image files do not exist',
         };
       }
 
@@ -110,7 +110,7 @@ export class PlaywrightIntegration {
       ) {
         return {
           success: false,
-          error: "Images have different dimensions",
+          error: 'Images have different dimensions',
         };
       }
 
@@ -124,14 +124,14 @@ export class PlaywrightIntegration {
         diff.data,
         baseImage.width,
         baseImage.height,
-        { threshold }
+        { threshold },
       );
 
       const totalPixels = baseImage.width * baseImage.height;
       const similarity = ((totalPixels - pixelDifference) / totalPixels) * 100;
       const passed = similarity >= 100 - threshold * 100;
 
-      const diffImagePath = currentImagePath.replace(".png", "-diff.png");
+      const diffImagePath = currentImagePath.replace('.png', '-diff.png');
       writeFileSync(diffImagePath, PNG.sync.write(diff));
 
       const comparison: ScreenshotComparison = {
@@ -145,18 +145,18 @@ export class PlaywrightIntegration {
 
       this.logger.info(
         `Screenshot comparison completed - Similarity: ${similarity.toFixed(
-          2
-        )}%`
+          2,
+        )}%`,
       );
       return {
         success: true,
         data: comparison,
       };
     } catch (error) {
-      this.logger.error("Failed to compare screenshots", error);
+      this.logger.error('Failed to compare screenshots', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -165,7 +165,7 @@ export class PlaywrightIntegration {
     testName: string,
     url: string,
     selector?: string,
-    baselineDir: string = "./baselines"
+    baselineDir: string = './baselines',
   ): Promise<ToolResult> {
     try {
       this.logger.info(`Running visual test: ${testName}`);
@@ -175,7 +175,7 @@ export class PlaywrightIntegration {
       const screenshotResult = await this.captureScreenshot(
         url,
         selector,
-        join(baselineDir, `${testName}-current.png`)
+        join(baselineDir, `${testName}-current.png`),
       );
 
       if (!screenshotResult.success) {
@@ -193,7 +193,7 @@ export class PlaywrightIntegration {
       if (existsSync(baseImagePath)) {
         const comparisonResult = await this.compareScreenshots(
           baseImagePath,
-          currentImagePath
+          currentImagePath,
         );
 
         if (comparisonResult.success) {
@@ -226,7 +226,7 @@ export class PlaywrightIntegration {
       }
 
       this.logger.info(
-        `Visual test completed: ${testName} - ${passed ? "PASSED" : "FAILED"}`
+        `Visual test completed: ${testName} - ${passed ? 'PASSED' : 'FAILED'}`,
       );
       return {
         success: true,
@@ -236,14 +236,14 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to run visual test: ${testName}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async runE2ETest(
     testName: string,
-    testScript: (page: Page) => Promise<void>
+    testScript: (page: Page) => Promise<void>,
   ): Promise<ToolResult> {
     try {
       await this.initialize();
@@ -280,7 +280,7 @@ export class PlaywrightIntegration {
           error:
             testError instanceof Error
               ? testError.message
-              : "Unknown test error",
+              : 'Unknown test error',
           duration,
         };
 
@@ -294,14 +294,14 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to setup E2E test: ${testName}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async testResponsiveDesign(
     url: string,
-    viewports: Array<{ width: number; height: number; name: string }>
+    viewports: Array<{ width: number; height: number; name: string }>,
   ): Promise<ToolResult> {
     try {
       await this.initialize();
@@ -319,7 +319,7 @@ export class PlaywrightIntegration {
         });
 
         await page.goto(url, {
-          waitUntil: "networkidle",
+          waitUntil: 'networkidle',
           timeout: this.config.timeout,
         });
 
@@ -338,7 +338,7 @@ export class PlaywrightIntegration {
       await context.close();
 
       this.logger.info(
-        `Responsive design test completed - ${screenshots.length} screenshots`
+        `Responsive design test completed - ${screenshots.length} screenshots`,
       );
       return {
         success: true,
@@ -348,7 +348,7 @@ export class PlaywrightIntegration {
       this.logger.error(`Failed to test responsive design: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -362,7 +362,7 @@ export class PlaywrightIntegration {
       const page = await context.newPage();
 
       await page.goto(url, {
-        waitUntil: "networkidle",
+        waitUntil: 'networkidle',
         timeout: this.config.timeout,
       });
 
@@ -370,31 +370,31 @@ export class PlaywrightIntegration {
       const accessibilityIssues: string[] = [];
 
       // Check for alt attributes on images
-      const imagesWithoutAlt = await page.locator("img:not([alt])").count();
+      const imagesWithoutAlt = await page.locator('img:not([alt])').count();
       if (imagesWithoutAlt > 0) {
         accessibilityIssues.push(
-          `${imagesWithoutAlt} images without alt attributes`
+          `${imagesWithoutAlt} images without alt attributes`,
         );
       }
 
       // Check for form labels
       const inputsWithoutLabels = await page
-        .locator("input:not([aria-label]):not([aria-labelledby])")
+        .locator('input:not([aria-label]):not([aria-labelledby])')
         .count();
       if (inputsWithoutLabels > 0) {
         accessibilityIssues.push(
-          `${inputsWithoutLabels} form inputs without proper labels`
+          `${inputsWithoutLabels} form inputs without proper labels`,
         );
       }
 
       // Check for heading hierarchy
       const headings = await page
-        .locator("h1, h2, h3, h4, h5, h6")
+        .locator('h1, h2, h3, h4, h5, h6')
         .allTextContents();
       const headingLevels = await page
-        .locator("h1, h2, h3, h4, h5, h6")
+        .locator('h1, h2, h3, h4, h5, h6')
         .evaluateAll((elements) =>
-          elements.map((el) => parseInt(el.tagName.charAt(1)))
+          elements.map((el) => parseInt(el.tagName.charAt(1))),
         );
 
       let previousLevel = 0;
@@ -409,7 +409,7 @@ export class PlaywrightIntegration {
       }
 
       if (hasHeadingIssues) {
-        accessibilityIssues.push("Improper heading hierarchy detected");
+        accessibilityIssues.push('Improper heading hierarchy detected');
       }
 
       await context.close();
@@ -417,21 +417,21 @@ export class PlaywrightIntegration {
       const passed = accessibilityIssues.length === 0;
 
       this.logger.info(
-        `Accessibility validation completed - ${passed ? "PASSED" : "FAILED"}`
+        `Accessibility validation completed - ${passed ? 'PASSED' : 'FAILED'}`,
       );
       return {
         success: true,
         data: {
           passed,
           issues: accessibilityIssues,
-          headings: headings,
+          headings,
         },
       };
     } catch (error) {
       this.logger.error(`Failed to validate accessibility: ${url}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

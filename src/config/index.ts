@@ -1,11 +1,11 @@
-import { config } from "dotenv";
-import { z } from "zod";
-import { execSync } from "child_process";
+import { config } from 'dotenv';
+import { z } from 'zod';
+import { execSync } from 'child_process';
 import {
-  GitHubConfigSchema,
   FigmaConfigSchema,
+  GitHubConfigSchema,
   PlaywrightConfigSchema,
-} from "../types/index.js";
+} from '../types/index.js';
 
 // Load environment variables
 config();
@@ -22,14 +22,14 @@ const EnvSchema = z.object({
   // Optional with defaults
   PLAYWRIGHT_HEADLESS: z
     .string()
-    .transform((val) => val === "true")
-    .default("true"),
+    .transform((val) => val === 'true')
+    .default('true'),
   PLAYWRIGHT_TIMEOUT: z
     .string()
     .transform((val) => parseInt(val, 10))
-    .default("30000"),
-  MCP_SERVER_NAME: z.string().default("frontend-dev-mcp-server"),
-  LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+    .default('30000'),
+  MCP_SERVER_NAME: z.string().default('frontend-dev-mcp-server'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 
 export class Config {
@@ -43,9 +43,9 @@ export class Config {
       this.env = EnvSchema.parse(process.env);
       this.autoDetectRepository();
     } catch (error) {
-      console.error("Configuration validation failed:", error);
+      console.error('Configuration validation failed:', error);
       throw new Error(
-        "Invalid environment configuration. Please ensure GITHUB_TOKEN and FIGMA_ACCESS_TOKEN are set."
+        'Invalid environment configuration. Please ensure GITHUB_TOKEN and FIGMA_ACCESS_TOKEN are set.',
       );
     }
   }
@@ -61,25 +61,25 @@ export class Config {
     try {
       // Try to get repository info from git remote
       if (!this.env.GITHUB_OWNER || !this.env.GITHUB_REPO) {
-        const remoteUrl = execSync("git remote get-url origin", {
-          encoding: "utf8",
+        const remoteUrl = execSync('git remote get-url origin', {
+          encoding: 'utf8',
         }).trim();
         const match = remoteUrl.match(
-          /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/
+          /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/,
         );
 
         if (match && match[1] && match[2]) {
           this.detectedOwner = match[1];
           this.detectedRepo = match[2];
           console.log(
-            `Auto-detected GitHub repository: ${this.detectedOwner}/${this.detectedRepo}`
+            `Auto-detected GitHub repository: ${this.detectedOwner}/${this.detectedRepo}`,
           );
         }
       }
     } catch (error) {
       // Git detection failed, will require manual configuration
       console.warn(
-        "Could not auto-detect GitHub repository. Please set GITHUB_OWNER and GITHUB_REPO in .env file if needed."
+        'Could not auto-detect GitHub repository. Please set GITHUB_OWNER and GITHUB_REPO in .env file if needed.',
       );
     }
   }
@@ -90,7 +90,7 @@ export class Config {
 
     if (!owner) {
       throw new Error(
-        "GitHub owner not provided and could not be auto-detected. Please set GITHUB_OWNER in .env file."
+        'GitHub owner not provided and could not be auto-detected. Please set GITHUB_OWNER in .env file.',
       );
     }
 
@@ -117,7 +117,7 @@ export class Config {
   get server() {
     return {
       name: this.env.MCP_SERVER_NAME,
-      version: "1.0.0",
+      version: '1.0.0',
       logLevel: this.env.LOG_LEVEL,
     };
   }

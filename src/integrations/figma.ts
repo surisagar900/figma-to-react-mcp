@@ -1,12 +1,12 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance } from 'axios';
 import {
   FigmaConfig,
   FigmaDesign,
   FigmaFrame,
   FigmaNode,
   ToolResult,
-} from "../types/index.js";
-import { Logger } from "../utils/logger.js";
+} from '../types/index.js';
+import { Logger } from '../utils/logger.js';
 
 export class FigmaIntegration {
   private api: AxiosInstance;
@@ -17,10 +17,10 @@ export class FigmaIntegration {
     this.config = config;
     this.logger = Logger.getInstance();
     this.api = axios.create({
-      baseURL: "https://api.figma.com/v1",
+      baseURL: 'https://api.figma.com/v1',
       headers: {
-        "X-Figma-Token": this.config.accessToken,
-        "Content-Type": "application/json",
+        'X-Figma-Token': this.config.accessToken,
+        'Content-Type': 'application/json',
       },
     });
   }
@@ -36,7 +36,7 @@ export class FigmaIntegration {
         id: fileId,
         name: fileData.name,
         lastModified: fileData.lastModified,
-        thumbnailUrl: fileData.thumbnailUrl || "",
+        thumbnailUrl: fileData.thumbnailUrl || '',
         version: fileData.version,
       };
 
@@ -51,7 +51,7 @@ export class FigmaIntegration {
       this.logger.error(`Failed to fetch Figma file: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -92,19 +92,19 @@ export class FigmaIntegration {
       this.logger.error(`Failed to fetch Figma frame: ${frameId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
   async getImages(fileId: string, nodeIds: string[]): Promise<ToolResult> {
     try {
-      this.logger.info(`Fetching images for nodes: ${nodeIds.join(", ")}`);
+      this.logger.info(`Fetching images for nodes: ${nodeIds.join(', ')}`);
 
       const response = await this.api.get(`/images/${fileId}`, {
         params: {
-          ids: nodeIds.join(","),
-          format: "png",
+          ids: nodeIds.join(','),
+          format: 'png',
           scale: 2,
         },
       });
@@ -114,10 +114,10 @@ export class FigmaIntegration {
         data: response.data.images,
       };
     } catch (error) {
-      this.logger.error("Failed to fetch Figma images", error);
+      this.logger.error('Failed to fetch Figma images', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -142,7 +142,7 @@ export class FigmaIntegration {
       this.logger.error(`Failed to analyze design tokens: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -167,7 +167,7 @@ export class FigmaIntegration {
       this.logger.error(`Failed to extract components: ${fileId}`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -193,21 +193,21 @@ export class FigmaIntegration {
     if (node.backgroundColor) {
       const { r, g, b, a = 1 } = node.backgroundColor;
       return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(
-        b * 255
+        b * 255,
       )}, ${a})`;
     }
 
     if (node.fills && node.fills.length > 0) {
       const fill = node.fills[0];
-      if (fill.type === "SOLID" && fill.color) {
+      if (fill.type === 'SOLID' && fill.color) {
         const { r, g, b, a = 1 } = fill.color;
         return `rgba(${Math.round(r * 255)}, ${Math.round(
-          g * 255
+          g * 255,
         )}, ${Math.round(b * 255)}, ${a})`;
       }
     }
 
-    return "transparent";
+    return 'transparent';
   }
 
   private extractDesignTokens(document: any): any {
@@ -222,12 +222,12 @@ export class FigmaIntegration {
       // Extract colors
       if (node.fills) {
         node.fills.forEach((fill: any) => {
-          if (fill.type === "SOLID" && fill.color) {
+          if (fill.type === 'SOLID' && fill.color) {
             const { r, g, b, a = 1 } = fill.color;
             tokens.colors.add(
               `rgba(${Math.round(r * 255)}, ${Math.round(
-                g * 255
-              )}, ${Math.round(b * 255)}, ${a})`
+                g * 255,
+              )}, ${Math.round(b * 255)}, ${a})`,
             );
           }
         });
@@ -264,7 +264,7 @@ export class FigmaIntegration {
     const components: FigmaNode[] = [];
 
     this.traverseNode(document, (node: any) => {
-      if (node.type === "COMPONENT" || node.type === "COMPONENT_SET") {
+      if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET') {
         components.push(this.convertToFigmaNode(node));
       }
     });
