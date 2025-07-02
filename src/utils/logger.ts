@@ -1,10 +1,10 @@
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export class Logger {
   private static instance: Logger;
   private logLevel: LogLevel;
 
-  private constructor(logLevel: LogLevel = 'info') {
+  private constructor(logLevel: LogLevel = "info") {
     this.logLevel = logLevel;
   }
 
@@ -31,31 +31,37 @@ export class Logger {
 
   private formatMessage(level: LogLevel, message: string, meta?: any): string {
     const timestamp = new Date().toISOString();
-    const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
+    const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${metaStr}`;
   }
 
   debug(message: string, meta?: any): void {
-    if (this.shouldLog('debug')) {
-      console.debug(this.formatMessage('debug', message, meta));
+    if (this.shouldLog("debug")) {
+      console.debug(this.formatMessage("debug", message, meta));
     }
   }
 
   info(message: string, meta?: any): void {
-    if (this.shouldLog('info')) {
-      console.info(this.formatMessage('info', message, meta));
+    if (this.shouldLog("info")) {
+      console.info(this.formatMessage("info", message, meta));
     }
   }
 
   warn(message: string, meta?: any): void {
-    if (this.shouldLog('warn')) {
-      console.warn(this.formatMessage('warn', message, meta));
+    if (this.shouldLog("warn")) {
+      console.warn(this.formatMessage("warn", message, meta));
     }
   }
 
   error(message: string, meta?: any): void {
-    if (this.shouldLog('error')) {
-      console.error(this.formatMessage('error', message, meta));
+    if (this.shouldLog("error")) {
+      console.error(this.formatMessage("error", message, meta));
+    }
+  }
+
+  success(message: string, meta?: any): void {
+    if (this.shouldLog("info")) {
+      console.log(`✅ ${this.formatMessage("info", message, meta)}`);
     }
   }
 }
