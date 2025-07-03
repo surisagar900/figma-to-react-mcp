@@ -9,6 +9,20 @@ import {
 import { Logger } from "../utils/logger.js";
 import { promises as fs } from "fs";
 import { join } from "path";
+import * as fsSync from "fs";
+import * as path from "path";
+
+// Read version from package.json
+function getPackageVersion(): string {
+  try {
+    const packagePath = path.join(process.cwd(), "package.json");
+    const packageContent = fsSync.readFileSync(packagePath, "utf-8");
+    const packageJson = JSON.parse(packageContent);
+    return packageJson.version;
+  } catch (error) {
+    return "2.0.3"; // fallback version
+  }
+}
 
 export class WorkflowService {
   private github: GitHubIntegration;
@@ -19,7 +33,7 @@ export class WorkflowService {
   constructor(
     github: GitHubIntegration,
     figma: FigmaIntegration,
-    playwright: PlaywrightIntegration,
+    playwright: PlaywrightIntegration
   ) {
     this.github = github;
     this.figma = figma;
@@ -28,13 +42,13 @@ export class WorkflowService {
   }
 
   async executeDesignToCodeWorkflow(
-    context: WorkflowContext,
+    context: WorkflowContext
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
       this.logger.info(
-        `Starting design-to-code workflow for: ${context.componentName}`,
+        `Starting design-to-code workflow for: ${context.componentName}`
       );
 
       // Parallel execution of independent operations
@@ -54,7 +68,7 @@ export class WorkflowService {
       if (tokensResult.status === "rejected" || !tokensResult.value.success) {
         return this.handleError(
           "Failed to analyze design tokens",
-          tokensResult,
+          tokensResult
         );
       }
 
@@ -72,13 +86,13 @@ export class WorkflowService {
       const component = await this.generateReactComponent(
         frame,
         designTokens,
-        context.componentName,
+        context.componentName
       );
 
       // Save component files and prepare for commit
       const files = await this.saveComponentFiles(
         component,
-        context.outputPath,
+        context.outputPath
       );
 
       // Create commit with generated code
@@ -88,7 +102,7 @@ export class WorkflowService {
           path: file.relativePath,
           content: file.content,
         })),
-        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`,
+        `feat: Add ${context.componentName} component from Figma design\n\nGenerated from Figma frame: ${frame.name}\nFrame ID: ${context.frameId}`
       );
 
       if (!commitResult.success) {
@@ -119,13 +133,13 @@ export class WorkflowService {
 
   async executeVisualTestingWorkflow(
     context: WorkflowContext,
-    componentUrl: string,
+    componentUrl: string
   ): Promise<ToolResult> {
     const startTime = Date.now();
 
     try {
       this.logger.info(
-        `Starting visual testing workflow for: ${context.componentName}`,
+        `Starting visual testing workflow for: ${context.componentName}`
       );
 
       // Parallel execution of test operations
@@ -134,7 +148,7 @@ export class WorkflowService {
           `${context.componentName}-visual-test`,
           componentUrl,
           undefined,
-          join(context.outputPath, "visual-tests"),
+          join(context.outputPath, "visual-tests")
         ),
         this.playwright.testResponsiveDesign(componentUrl, [
           { width: 320, height: 568, name: "mobile" },
@@ -224,7 +238,7 @@ export class WorkflowService {
   }
 
   async createPullRequestWithResults(
-    context: WorkflowContext,
+    context: WorkflowContext
   ): Promise<ToolResult> {
     try {
       const testSummary = this.generateTestSummary(context.testResults || []);
@@ -276,7 +290,7 @@ export class WorkflowService {
   private async generateReactComponent(
     frame: any,
     designTokens: any,
-    componentName: string,
+    componentName: string
   ): Promise<GeneratedComponent> {
     // Generate optimized React component with TypeScript
     const backgroundColor =
@@ -344,8 +358,8 @@ export const ${componentName}: React.FC<${componentName}Props> = ({
             ${frame.name}
           </h2>
           <p style={{ margin: '${
-  spacing / 2
-}px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
+            spacing / 2
+          }px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
             Generated from Figma design
           </p>
         </div>
@@ -368,7 +382,7 @@ export default ${componentName};
 
   private async saveComponentFiles(
     component: GeneratedComponent & { cssContent?: string },
-    outputPath: string,
+    outputPath: string
   ): Promise<
     Array<{ relativePath: string; content: string; fullPath: string }>
   > {
@@ -451,7 +465,7 @@ export default ${componentName};
 
   private generatePRDescription(
     context: WorkflowContext,
-    testSummary: string,
+    testSummary: string
   ): string {
     return `# ${context.componentName} Component
 
@@ -467,13 +481,21 @@ This React component was automatically generated from a Figma design using the F
 ${testSummary}
 
 ## 📁 Files Added
-- \`${context.outputPath}/${context.componentName}/${context.componentName}.tsx\` - Main component file
-- \`${context.outputPath}/${context.componentName}/${context.componentName}.css\` - Component styles
-- \`${context.outputPath}/${context.componentName}/index.ts\` - Export definitions
+- \`${context.outputPath}/${context.componentName}/${
+      context.componentName
+    }.tsx\` - Main component file
+- \`${context.outputPath}/${context.componentName}/${
+      context.componentName
+    }.css\` - Component styles
+- \`${context.outputPath}/${
+      context.componentName
+    }/index.ts\` - Export definitions
 
 ## 🚀 Usage
 \`\`\`tsx
-import { ${context.componentName} } from './${context.outputPath}/${context.componentName}';
+import { ${context.componentName} } from './${context.outputPath}/${
+      context.componentName
+    }';
 
 function App() {
   return (
@@ -492,6 +514,6 @@ function App() {
 - ✅ CSS transitions and hover effects
 
 ---
-*Generated by Figma to React MCP v2.0.0*`;
+*Generated by Figma to React MCP v${getPackageVersion()}*`;
   }
 }
