@@ -358,8 +358,8 @@ export const ${componentName}: React.FC<${componentName}Props> = ({
             ${frame.name}
           </h2>
           <p style={{ margin: '${
-            spacing / 2
-          }px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
+  spacing / 2
+}px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
             Generated from Figma design
           </p>
         </div>
@@ -482,20 +482,20 @@ ${testSummary}
 
 ## 📁 Files Added
 - \`${context.outputPath}/${context.componentName}/${
-      context.componentName
-    }.tsx\` - Main component file
+  context.componentName
+}.tsx\` - Main component file
 - \`${context.outputPath}/${context.componentName}/${
-      context.componentName
-    }.css\` - Component styles
+  context.componentName
+}.css\` - Component styles
 - \`${context.outputPath}/${
-      context.componentName
-    }/index.ts\` - Export definitions
+  context.componentName
+}/index.ts\` - Export definitions
 
 ## 🚀 Usage
 \`\`\`tsx
 import { ${context.componentName} } from './${context.outputPath}/${
-      context.componentName
-    }';
+  context.componentName
+}';
 
 function App() {
   return (
