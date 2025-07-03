@@ -416,13 +416,13 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log("figma-to-react-mcp v2.0.0");
+    console.log("figma-to-react-mcp v2.0.3");
     process.exit(0);
   }
 
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-🎨 Figma to React MCP v2.0.0
+🎨 Figma to React MCP v2.0.3
 =================================
 
 A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations.
@@ -444,9 +444,9 @@ Optional Environment Variables:
   LOG_LEVEL             Logging level (default: info)
 
 Examples:
-    npx figma-to-react-mcp --setup    # Interactive setup
+  npx figma-to-react-mcp --setup    # Interactive setup
   npx figma-to-react-mcp             # Start MCP server
-GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx figma-to-react-mcp
+  GITHUB_TOKEN=xxx FIGMA_ACCESS_TOKEN=yyy npx figma-to-react-mcp
 
 For more information, visit: https://github.com/surisagar900/figma-to-react-mcp
 `);
