@@ -8,6 +8,8 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
+import * as fs from "fs";
+import * as path from "path";
 
 import { Config } from "./config/index.js";
 import { Logger } from "./utils/logger.js";
@@ -16,6 +18,18 @@ import { GitHubIntegration } from "./integrations/github.js";
 import { FigmaIntegration } from "./integrations/figma.js";
 import { PlaywrightIntegration } from "./integrations/playwright.js";
 import { WorkflowService } from "./services/workflow.js";
+
+// Read version from package.json
+function getPackageVersion(): string {
+  try {
+    const packagePath = path.join(process.cwd(), "package.json");
+    const packageContent = fs.readFileSync(packagePath, "utf-8");
+    const packageJson = JSON.parse(packageContent);
+    return packageJson.version;
+  } catch (error) {
+    return "2.0.3"; // fallback version
+  }
+}
 
 class FigmaToReactMCPServer {
   private server: Server;
@@ -416,13 +430,13 @@ async function main() {
   }
 
   if (args.includes("--version") || args.includes("-v")) {
-    console.log("figma-to-react-mcp v2.0.3");
+    console.log(`figma-to-react-mcp v${getPackageVersion()}`);
     process.exit(0);
   }
 
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`
-🎨 Figma to React MCP v2.0.3
+🎨 Figma to React MCP v${getPackageVersion()}
 =================================
 
 A unified MCP server for frontend developers combining GitHub, Figma, and Playwright integrations.
