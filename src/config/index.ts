@@ -45,7 +45,7 @@ export class Config {
     } catch (error) {
       console.error("Configuration validation failed:", error);
       throw new Error(
-        "Invalid environment configuration. Please ensure GITHUB_TOKEN and FIGMA_ACCESS_TOKEN are set.",
+        "Invalid environment configuration. Please ensure GITHUB_TOKEN and FIGMA_ACCESS_TOKEN are set."
       );
     }
   }
@@ -65,21 +65,21 @@ export class Config {
           encoding: "utf8",
         }).trim();
         const match = remoteUrl.match(
-          /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/,
+          /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/
         );
 
         if (match && match[1] && match[2]) {
           this.detectedOwner = match[1];
           this.detectedRepo = match[2];
           console.log(
-            `Auto-detected GitHub repository: ${this.detectedOwner}/${this.detectedRepo}`,
+            `Auto-detected GitHub repository: ${this.detectedOwner}/${this.detectedRepo}`
           );
         }
       }
     } catch (error) {
       // Git detection failed, will require manual configuration
       console.warn(
-        "Could not auto-detect GitHub repository. Please set GITHUB_OWNER and GITHUB_REPO in .env file if needed.",
+        "Could not auto-detect GitHub repository. Please set GITHUB_OWNER and GITHUB_REPO in .env file if needed."
       );
     }
   }
@@ -90,14 +90,14 @@ export class Config {
 
     if (!owner) {
       throw new Error(
-        "GitHub owner not provided and could not be auto-detected. Please set GITHUB_OWNER in .env file.",
+        "GitHub owner not provided and could not be auto-detected. Please set GITHUB_OWNER in .env file or run 'npx figma-to-react-mcp --setup' for interactive configuration."
       );
     }
 
     return GitHubConfigSchema.parse({
       token: this.env.GITHUB_TOKEN,
       owner,
-      repo,
+      repo: repo || "figma-to-react-components", // Default repo name if not specified
     });
   }
 

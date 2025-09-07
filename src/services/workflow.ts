@@ -291,16 +291,9 @@ export class WorkflowService {
     frame: any,
     designTokens: any,
     componentName: string
-  ): Promise<GeneratedComponent> {
-    // Generate optimized React component with TypeScript
-    const backgroundColor =
-      designTokens?.colors?.[0] || frame.backgroundColor || "#ffffff";
-
-    // Extract useful styling from design tokens
-    const primaryFont = designTokens?.fonts?.[0] || "Inter, sans-serif";
-    const borderRadius = designTokens?.borderRadius?.[0] || 8;
-    const spacing =
-      designTokens?.spacing?.filter((s: number) => s > 0 && s < 100)?.[0] || 16;
+  ): Promise<GeneratedComponent & { cssContent: string }> {
+    // Generate CSS content
+    const cssContent = this.generateCSS(componentName, designTokens, frame);
 
     const componentCode = `import React from 'react';
 import './${componentName}.css';
@@ -314,6 +307,10 @@ interface ${componentName}Props {
   width?: string | number;
   /** Override height */
   height?: string | number;
+  /** Override text content */
+  text?: string;
+  /** Click handler */
+  onClick?: () => void;
 }
 
 /**
@@ -328,21 +325,16 @@ interface ${componentName}Props {
 export const ${componentName}: React.FC<${componentName}Props> = ({ 
   className = '',
   children,
-  backgroundColor = '${backgroundColor}',
+  backgroundColor,
   width = '${frame.width}px',
   height = '${frame.height}px',
+  text = '${frame.name}',
+  onClick,
 }) => {
   const componentStyle: React.CSSProperties = {
     width,
     height,
     backgroundColor,
-    fontFamily: '${primaryFont}',
-    borderRadius: '${borderRadius}px',
-    padding: '${spacing}px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
   };
 
   return (
@@ -351,15 +343,14 @@ export const ${componentName}: React.FC<${componentName}Props> = ({
       style={componentStyle}
       role="region"
       aria-label="${componentName} component"
+      onClick={onClick}
     >
       {children || (
         <div className="${componentName.toLowerCase()}-content">
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>
-            ${frame.name}
+          <h2 className="${componentName.toLowerCase()}-title">
+            {text}
           </h2>
-          <p style={{ margin: '${
-  spacing / 2
-}px 0 0', fontSize: '0.875rem', opacity: 0.7 }}>
+          <p className="${componentName.toLowerCase()}-description">
             Generated from Figma design
           </p>
         </div>
@@ -377,7 +368,87 @@ export default ${componentName};
       content: componentCode,
       framework: "react",
       dependencies: ["react", "@types/react"],
+      cssContent,
     };
+  }
+
+  private generateCSS(
+    componentName: string,
+    designTokens: any,
+    frame: any
+  ): string {
+    const baseClass = componentName.toLowerCase();
+    const backgroundColor =
+      designTokens?.colors?.[0] || frame.backgroundColor || "#ffffff";
+    const primaryFont = designTokens?.fonts?.[0] || "Inter, sans-serif";
+    const borderRadius = designTokens?.borderRadius?.[0] || 8;
+    const spacing =
+      designTokens?.spacing?.filter((s: number) => s > 0 && s < 100)?.[0] || 16;
+
+    return `.${baseClass}-component {
+  background-color: ${backgroundColor};
+  font-family: ${primaryFont};
+  border-radius: ${borderRadius}px;
+  padding: ${spacing}px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.${baseClass}-component:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.${baseClass}-content {
+  text-align: center;
+  max-width: 100%;
+}
+
+.${baseClass}-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: inherit;
+  line-height: 1.2;
+}
+
+.${baseClass}-description {
+  margin: ${spacing / 2}px 0 0;
+  font-size: 0.875rem;
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .${baseClass}-component {
+    padding: ${spacing * 0.75}px;
+  }
+  
+  .${baseClass}-title {
+    font-size: 1.125rem;
+  }
+  
+  .${baseClass}-description {
+    font-size: 0.8rem;
+  }
+}
+
+/* Focus states for accessibility */
+.${baseClass}-component:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.${baseClass}-component:focus:not(:focus-visible) {
+  outline: none;
+}
+`;
   }
 
   private async saveComponentFiles(
@@ -482,20 +553,20 @@ ${testSummary}
 
 ## 📁 Files Added
 - \`${context.outputPath}/${context.componentName}/${
-  context.componentName
-}.tsx\` - Main component file
+      context.componentName
+    }.tsx\` - Main component file
 - \`${context.outputPath}/${context.componentName}/${
-  context.componentName
-}.css\` - Component styles
+      context.componentName
+    }.css\` - Component styles
 - \`${context.outputPath}/${
-  context.componentName
-}/index.ts\` - Export definitions
+      context.componentName
+    }/index.ts\` - Export definitions
 
 ## 🚀 Usage
 \`\`\`tsx
 import { ${context.componentName} } from './${context.outputPath}/${
-  context.componentName
-}';
+      context.componentName
+    }';
 
 function App() {
   return (

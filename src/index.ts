@@ -272,46 +272,113 @@ class FigmaToReactMCPServer {
 
   // Tool Handlers
   private async handleDesignToCode(args: any) {
-    const { fileId, nodeId } = this.parseFigmaInput(args.figmaInput);
-    const branchName = this.generateBranchName(
-      args.componentName,
-      args.githubBranch
-    );
-    const outputPath = args.outputPath || "./src/components";
+    try {
+      const { fileId, nodeId } = this.parseFigmaInput(args.figmaInput);
+      const branchName = this.generateBranchName(
+        args.componentName,
+        args.githubBranch
+      );
+      const outputPath = args.outputPath || "./src/components";
 
-    if (!nodeId) {
-      // If no specific node is selected, analyze the file and show available frames
-      const fileResult = await this.figma.getFile(fileId);
-      if (!fileResult.success) {
+      if (!nodeId) {
+        // If no specific node is selected, analyze the file and show available frames
+        const fileResult = await this.figma.getFile(fileId);
+        if (!fileResult.success) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `❌ Failed to fetch Figma file: ${fileResult.error}\n\nPlease check:\n1. Your Figma access token is valid\n2. The file ID is correct\n3. You have access to the file`,
+              },
+            ],
+          };
+        }
+
+        // Extract available frames from the file
+        const frames = this.extractAvailableFrames(fileResult.data.document);
+        const frameList = frames
+          .map((frame) => `- ${frame.name} (ID: ${frame.id})`)
+          .join("\n");
+
         return {
           content: [
-            { type: "text", text: JSON.stringify(fileResult, null, 2) },
+            {
+              type: "text",
+              text: `🎨 Figma file loaded successfully!\n\nAvailable frames and components:\n${frameList}\n\nTo generate a component, please select a specific frame and provide the URL with node-id parameter.\n\nExample: https://www.figma.com/file/${fileId}/Design?node-id=1%3A2`,
+            },
           ],
         };
       }
 
+      const context = {
+        figmaFileId: fileId,
+        frameId: nodeId,
+        componentName: args.componentName,
+        outputPath,
+        githubBranch: branchName,
+      };
+
+      const result = await this.workflow.executeDesignToCodeWorkflow(context);
+
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `✅ Component generated successfully!\n\n📁 Files created:\n- ${result.data.component.name}.tsx\n- ${result.data.component.name}.css\n- index.ts\n\n🌿 Branch: ${result.data.branch}\n📝 Commit: ${result.data.commitSha}\n\n⏱️ Duration: ${result.data.duration}ms`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `❌ Component generation failed: ${result.error}\n\nPlease check your configuration and try again.`,
+            },
+          ],
+        };
+      }
+    } catch (error) {
+      this.logger.error("Design to code workflow failed", error);
       return {
         content: [
           {
             type: "text",
-            text: `No specific frame selected. Please select a frame or component from the Figma file and provide the URL with node-id parameter.\n\nAvailable frames and components will be analyzed... (Implementation would show frame list here)`,
+            text: `❌ Unexpected error: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }\n\nPlease check your configuration and try again.`,
           },
         ],
       };
     }
+  }
 
-    const context = {
-      figmaFileId: fileId,
-      frameId: nodeId,
-      componentName: args.componentName,
-      outputPath,
-      githubBranch: branchName,
+  private extractAvailableFrames(
+    document: any
+  ): Array<{ id: string; name: string; type: string }> {
+    const frames: Array<{ id: string; name: string; type: string }> = [];
+
+    const extractFrames = (node: any) => {
+      if (
+        node.type === "FRAME" ||
+        node.type === "COMPONENT" ||
+        node.type === "INSTANCE"
+      ) {
+        frames.push({
+          id: node.id,
+          name: node.name,
+          type: node.type,
+        });
+      }
+
+      if (node.children) {
+        node.children.forEach(extractFrames);
+      }
     };
 
-    const result = await this.workflow.executeDesignToCodeWorkflow(context);
-    return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-    };
+    extractFrames(document);
+    return frames.slice(0, 10); // Limit to first 10 frames for readability
   }
 
   private async handleTestDesignImplementation(args: any) {

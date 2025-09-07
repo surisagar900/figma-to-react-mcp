@@ -64,7 +64,7 @@ export class FigmaIntegration {
           message: error.message,
         });
         return Promise.reject(error);
-      },
+      }
     );
   }
 
@@ -157,8 +157,8 @@ export class FigmaIntegration {
         backgroundColor: this.extractBackgroundColor(frameNode),
         children: frameNode.children
           ? frameNode.children.map((child: any) =>
-            this.convertToFigmaNode(child),
-          )
+              this.convertToFigmaNode(child)
+            )
           : [],
       };
 
@@ -169,7 +169,7 @@ export class FigmaIntegration {
     } catch (error) {
       this.logger.error(
         `Failed to fetch Figma frame: ${fileId}/${nodeId}`,
-        error,
+        error
       );
       return {
         success: false,
@@ -305,7 +305,7 @@ export class FigmaIntegration {
       if (solidFill && solidFill.color) {
         const { r, g, b, a = 1 } = solidFill.color;
         return `rgba(${Math.round(r * 255)}, ${Math.round(
-          g * 255,
+          g * 255
         )}, ${Math.round(b * 255)}, ${a})`;
       }
     }
@@ -333,16 +333,126 @@ export class FigmaIntegration {
       }
     }
 
+    // Extract additional design tokens from styles
+    this.extractStyleTokens(document);
+
     return {
       colors: Array.from(this.tokenCache.colors.values()),
       fonts: Array.from(this.tokenCache.fonts.values()),
       spacing: Array.from(this.tokenCache.spacing.values()).sort(
-        (a, b) => a - b,
+        (a, b) => a - b
       ),
       borderRadius: Array.from(this.tokenCache.borderRadius.values()).sort(
-        (a, b) => a - b,
+        (a, b) => a - b
       ),
+      // Add more comprehensive design tokens
+      shadows: this.extractShadows(document),
+      gradients: this.extractGradients(document),
     };
+  }
+
+  private extractStyleTokens(document: any): void {
+    // Extract from document styles if available
+    if (document.styles) {
+      Object.values(document.styles).forEach((style: any) => {
+        if (style.styleType === "FILL" && style.fills) {
+          style.fills.forEach((fill: any) => {
+            if (fill.type === "SOLID" && fill.color) {
+              const { r, g, b, a = 1 } = fill.color;
+              const colorKey = `${r}-${g}-${b}-${a}`;
+              const colorValue = `rgba(${Math.round(r * 255)}, ${Math.round(
+                g * 255
+              )}, ${Math.round(b * 255)}, ${a})`;
+              this.tokenCache.colors.set(colorKey, colorValue);
+            }
+          });
+        }
+      });
+    }
+  }
+
+  private extractShadows(document: any): string[] {
+    const shadows: string[] = [];
+    const nodesToProcess = [document];
+
+    while (nodesToProcess.length > 0) {
+      const node = nodesToProcess.pop()!;
+
+      if (node.effects) {
+        node.effects.forEach((effect: any) => {
+          if (effect.type === "DROP_SHADOW" && effect.visible) {
+            const { offset, radius, color } = effect;
+            const shadowValue = `${offset?.x || 0}px ${offset?.y || 0}px ${
+              radius || 0
+            }px rgba(${Math.round((color?.r || 0) * 255)}, ${Math.round(
+              (color?.g || 0) * 255
+            )}, ${Math.round((color?.b || 0) * 255)}, ${color?.a || 1})`;
+            if (!shadows.includes(shadowValue)) {
+              shadows.push(shadowValue);
+            }
+          }
+        });
+      }
+
+      if (node.children) {
+        nodesToProcess.push(...node.children);
+      }
+    }
+
+    return shadows;
+  }
+
+  private extractGradients(document: any): string[] {
+    const gradients: string[] = [];
+    const nodesToProcess = [document];
+
+    while (nodesToProcess.length > 0) {
+      const node = nodesToProcess.pop()!;
+
+      if (node.fills) {
+        node.fills.forEach((fill: any) => {
+          if (
+            fill.type === "GRADIENT_LINEAR" ||
+            fill.type === "GRADIENT_RADIAL"
+          ) {
+            const gradientValue = this.convertGradientToCSS(fill);
+            if (gradientValue && !gradients.includes(gradientValue)) {
+              gradients.push(gradientValue);
+            }
+          }
+        });
+      }
+
+      if (node.children) {
+        nodesToProcess.push(...node.children);
+      }
+    }
+
+    return gradients;
+  }
+
+  private convertGradientToCSS(fill: any): string | null {
+    if (!fill.gradientStops || fill.gradientStops.length < 2) {
+      return null;
+    }
+
+    const stops = fill.gradientStops
+      .map((stop: any) => {
+        const { r, g, b, a = 1 } = stop.color;
+        const color = `rgba(${Math.round(r * 255)}, ${Math.round(
+          g * 255
+        )}, ${Math.round(b * 255)}, ${a})`;
+        return `${color} ${Math.round(stop.position * 100)}%`;
+      })
+      .join(", ");
+
+    if (fill.type === "GRADIENT_LINEAR") {
+      return `linear-gradient(90deg, ${stops})`;
+    } else if (fill.type === "GRADIENT_RADIAL") {
+      return `radial-gradient(circle, ${stops})`;
+    }
+
+    return null;
   }
 
   private processNodeForTokens(node: any): void {
@@ -353,7 +463,7 @@ export class FigmaIntegration {
           const { r, g, b, a = 1 } = fill.color;
           const colorKey = `${r}-${g}-${b}-${a}`;
           const colorValue = `rgba(${Math.round(r * 255)}, ${Math.round(
-            g * 255,
+            g * 255
           )}, ${Math.round(b * 255)}, ${a})`;
           this.tokenCache.colors.set(colorKey, colorValue);
         }
@@ -378,7 +488,7 @@ export class FigmaIntegration {
     if (typeof node.cornerRadius === "number") {
       this.tokenCache.borderRadius.set(
         `br-${node.cornerRadius}`,
-        node.cornerRadius,
+        node.cornerRadius
       );
     }
   }
