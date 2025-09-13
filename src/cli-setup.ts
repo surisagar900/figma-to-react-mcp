@@ -28,7 +28,10 @@ class CLISetup {
 
   private async promptSecret(question: string): Promise<string> {
     // Prefer hidden input when a TTY is available
-    if (this.isInteractive() && typeof (process.stdin as any).setRawMode === "function") {
+    if (
+      this.isInteractive() &&
+      typeof (process.stdin as any).setRawMode === "function"
+    ) {
       return new Promise((resolve) => {
         process.stdout.write(question);
         (process.stdin as any).setRawMode(true);
@@ -147,8 +150,13 @@ class CLISetup {
     console.log("✅ Cursor configuration updated successfully!");
   }
 
-  private async createProjectCursorMcpConfig(config: SetupConfig): Promise<void> {
-    const projectConfigPath = path.join(process.cwd(), "cursor-mcp-config.json");
+  private async createProjectCursorMcpConfig(
+    config: SetupConfig
+  ): Promise<void> {
+    const projectConfigPath = path.join(
+      process.cwd(),
+      "cursor-mcp-config.json"
+    );
     const content = {
       mcpServers: {
         "figma-to-react-mcp": {
