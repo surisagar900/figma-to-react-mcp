@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/src/index.js",
   "bin": {
-    "figma-to-react-mcp": "dist/src/index.js"
+    "figma-to-react-mcp": "dist/src/index.js",
+    "figma-to-react-mcp-setup": "dist/src/cli-setup.js"
   },
   "files": [
     "dist/**/*",
