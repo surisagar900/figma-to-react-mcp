@@ -157,8 +157,8 @@ export class FigmaIntegration {
         backgroundColor: this.extractBackgroundColor(frameNode),
         children: frameNode.children
           ? frameNode.children.map((child: any) =>
-              this.convertToFigmaNode(child)
-            )
+            this.convertToFigmaNode(child)
+          )
           : [],
       };
 

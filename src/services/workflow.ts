@@ -553,20 +553,20 @@ ${testSummary}
 
 ## 📁 Files Added
 - \`${context.outputPath}/${context.componentName}/${
-      context.componentName
-    }.tsx\` - Main component file
+  context.componentName
+}.tsx\` - Main component file
 - \`${context.outputPath}/${context.componentName}/${
-      context.componentName
-    }.css\` - Component styles
+  context.componentName
+}.css\` - Component styles
 - \`${context.outputPath}/${
-      context.componentName
-    }/index.ts\` - Export definitions
+  context.componentName
+}/index.ts\` - Export definitions
 
 ## 🚀 Usage
 \`\`\`tsx
 import { ${context.componentName} } from './${context.outputPath}/${
-      context.componentName
-    }';
+  context.componentName
+}';
 
 function App() {
   return (
